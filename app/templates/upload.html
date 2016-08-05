@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% set active_page = "upload" %}
+{% block content %}
+
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr>
+          <td><b>ROS Installable Package (*.zip)</b> {{ form.ros_file(size=31, class="form-control") }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td><b>Manifest Filename (*.json)</b> {{ form.manifest_file(size=31, class="form-control") }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+	  <td><b>Optional Comments</b> {{ form.comments(size=31, class="form-control") }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
+      </table>
+      <tr>
+        <td>
+          <button type="submit" class="btn btn-info" name="do_action" value="upload" onclick="$('#loading').show();$('#hiding').hide();">Upload</button>
+          <button type="submit" class="btn btn-success" name="do_action" value="download" onclick="$('#loading').show();$('#hiding').hide();">Download Client Package</button>
+        </td>
+      </tr>
+      {% if form.ros_file.errors + form.manifest_file.errors + form.comments.errors %}
+      <div class="alert alert-danger" role="alert">
+	  {% for message in form.ros_file.errors + form.manifest_file.errors + form.comments.errors %}
+          <b>ERROR:</b> {{ message }}<br/>
+          {% endfor %}
+      </div>
+      {% endif %}
+      </table>
+    </div>
+  </div>
+</form>
+
+<div id="loading" style="display:none;">
+  <input type="image" src="{{ url_for('static',filename='img/loading.gif') }}">
+</div>
+
+<div id="hiding">
+  {% if action_error_msg %}
+    <div class="alert alert-danger" role="alert">
+      <b>ERROR:</b> Failed to upload file <b>'{{ cmd }}'</b></b>.
+    </div>
+    <div class="panel panel-danger">
+      <div class="panel-heading">
+        <h3 class="panel-title">Error Message</h3>
+      </div>
+      <div class="panel-body">
+          <pre class="text-danger bg-danger">{{ action_error_msg }}</pre>
+      </div>
+    </div>
+  {% elif succeed %}
+    <div class="alert alert-success" role="alert">
+      <b>OK:</b> Succeeded to upload file <b>'{{ cmd }}'</b></b>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
