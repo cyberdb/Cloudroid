@@ -145,6 +145,17 @@ def getContainerPort(image_name, cmd):
     logging.info('New container is started. Websocket port on the host machine is %s.', host_port)
     return host_port+" "+container_id
 
+def listContainner():
+    logging.info('The query of existing containers')
+    
+    try:
+        docker_client = Client(base_url=DOCKER_PORT)
+        return docker_client.containers(quiet=True)#Only running containers are shown by default
+    
+    except Exception, e:
+        logging.error('Unable to list the containers. \nReason: %s', str(e))
+        return
+
 def stopContainer(container_id):
     logging.info('Stopping the container %s', container_id)
     

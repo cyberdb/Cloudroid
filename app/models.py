@@ -42,3 +42,9 @@ class Image(db.Model):
     uploadtime = db.Column(db.DateTime())
     uploaduser = db.Column(db.String(100))
     
+
+class Container(db.Model):
+    __tablename__ = 'containers'
+    uid = db.Column(db.Integer, primary_key = True)
+    containerid = db.Column(db.String(100))
+    createdtime = db.Column(db.String(100))    
