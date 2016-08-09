@@ -13,6 +13,9 @@ class abandoned_container(threading.Thread): #Find the abandoned container to re
         threading.Thread.__init__(self)  
         
    
+   
+   
+   
     def run(self):   
         while True:
             print "containerIdList length"
