@@ -4,6 +4,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, lm
 from app.models import User
 from app.dockerops import *
+from app.supervise_containers import *
 
 port = 9090
 
@@ -89,6 +90,7 @@ def upload():
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
+    
     import socket
     
     hostname = socket.getfqdn(socket.gethostname(  ))
@@ -96,7 +98,15 @@ def get_instance(image_name):
     return 'ws://' + ipaddr + ':' + str(getContainerPort(image_name, ''))
     
       
-
+@app.route('/ping/<string:containerid>', methods=['GET'])
+def ping(containerid):
     
+    import time
+    for i in xrange(len(containerIdList)):
+        if containerid == containerIdList[i]:
+            lastChangeTimeList[i] = time.time()
+            return "There are %d existing containers."%len(containerIdList)
+    containerIdList.append(containerid)
+    lastChangeTimeList.append(time.time())
+    return "There are %d existing containers."%len(containerIdList)
         
-

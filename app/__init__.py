@@ -16,7 +16,9 @@ def setlogger():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-setlogger()    
+setlogger()
+
+ 
 app = Flask(__name__)
 app.config.from_object('config')
 db = SQLAlchemy(app)
@@ -24,4 +26,14 @@ lm = LoginManager()
 lm.init_app(app)
 lm.login_view = 'login'
 
+from supervise_containers import abandoned_container
+container_dropping_thread = abandoned_container() 
+container_dropping_thread.start() 
+
+
 from app import views, models
+
+
+
+
+

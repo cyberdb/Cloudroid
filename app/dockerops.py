@@ -143,4 +143,19 @@ def getContainerPort(image_name, cmd):
         host_port = response[0].get('HostPort')
 
     logging.info('New container is started. Websocket port on the host machine is %s.', host_port)
-    return host_port
+    return host_port+" "+container_id
+
+def stopContainer(container_id):
+    logging.info('Stopping the container %s', container_id)
+    
+    try:
+        docker_client = Client(base_url=DOCKER_PORT)
+        docker_client.remove_container(container = container_id, force = True)
+               
+    except Exception, e:
+        logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
+        return
+    
+    
+    
+    
