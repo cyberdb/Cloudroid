@@ -98,15 +98,23 @@ def get_instance(image_name):
     return 'ws://' + ipaddr + ':' + str(getContainerPort(image_name, ''))
     
       
-@app.route('/ping/<string:containerid>', methods=['GET'])
-def ping(containerid):
+@app.route('/ping/<string:container_id>', methods=['GET'])
+def ping(container_id):
     
-    import time
-    for i in xrange(len(containerIdList)):
-        if containerid == containerIdList[i]:
-            lastChangeTimeList[i] = time.time()
-            return "There are %d existing containers."%len(containerIdList)
-    containerIdList.append(containerid)
-    lastChangeTimeList.append(time.time())
-    return "There are %d existing containers."%len(containerIdList)
+    
+    from app import db, models
+    from models import Container
+    finding = Container.query.filter_by(containerid=container_id).first()
+    if finding is not None:
+        u = models.Container(containerid=container_id, createdtime=str(time.time()))
+        db.session.add(u) 
+        db.session.commit() 
+        db.session.delete(finding)
+        db.session.commit()
+    else:
+        u = models.Container(containerid=container_id, createdtime=str(time.time()))
+        db.session.add(u) 
+        db.session.commit() 
+    
+    return "There are existing containers."
         
