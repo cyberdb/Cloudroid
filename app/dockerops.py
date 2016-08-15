@@ -1,8 +1,9 @@
+#coding:utf-8
 import zipfile, os, shutil, json, time, logging
 from docker import Client
 from werkzeug import secure_filename
 from app.models import Image
-from app import db
+from app import db, models 
 from datetime import datetime
 from flask_login import current_user
 from flask.templating import render_template
@@ -13,6 +14,59 @@ DOCKER_PORT = 'unix://var/run/docker.sock'
 class StreamLineBuildGenerator(object):
     def __init__(self, json_data):
         self.__dict__ = json.loads(json_data)
+        
+def ListToString(lista = []):
+    stringa = ""
+    if lista.__len__() == 0:
+        stringa = "None"
+        return stringa
+    else:
+        for i in range(0,lista.__len__()):
+            lista[i] = str(lista[i]+";")
+        stringa = ""
+        stringa.join(lista)
+        return stringa
+
+def StringToList(stringa):
+    if stringa == "None":
+        lista = []
+        return lista
+    else:
+        lista = stringa.split(';')
+        return lista
+
+def downloadFileBuild(downloadFileName):
+    images = models.Image.query.filter_by(imagename = downloadFileName).first()
+    subscribed_topics = StringToList(images.subscribed_topics)
+    published_topics = StringToList(images.published_topics)
+    advertised_services = StringToList(images.advertised_services)
+    image_name = images.imagename
+    
+    
+    '''Generating client-side proxy'''
+    client_path='./client'
+    
+    try:
+        if os.path.exists(client_path):
+            shutil.rmtree(client_path)
+            
+        unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
+        os.system(unzip_cmd)
+        client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
+                                        advertised_services = advertised_services, url = "http://127.0.0.1:5002", image_id = image_name)
+        with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
+            fh.write(client_launch)
+        zip_cmd = 'zip -r ' + image_name +".zip " + "./client"
+        os.system(zip_cmd)
+        os.system("mv " + image_name + ".zip app/download/")
+        
+    except Exception, e:
+        error_string = 'Unable to generating client proxy for image {}. \nReason: {}'.format(image_name, str(e))
+        logging.error(error_string)
+        return error_string
+    return None
+            
+    
         
 def uploadFile(ros_file, manifest_file, comments):  
     upload_path='./upload'
@@ -55,6 +109,7 @@ def uploadFile(ros_file, manifest_file, comments):
     advertised_services = manifest.get('advertised_services')
     advertised_actions = manifest.get('advertised_actions')   
     start_cmds = manifest.get('start_cmds')
+  
     if start_cmds == None :
         error_string = 'Manifest file {} does not contain start_cmds. Generate docker image failed'.format(manifest_file.getFileName())
         logging.error(error_string)
@@ -94,7 +149,7 @@ def uploadFile(ros_file, manifest_file, comments):
         unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
         os.system(unzip_cmd)
         client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
-                                        advertised_services = advertised_services, url = "http://127.0.0.1:5001", image_id = image_name)
+                                        advertised_services = advertised_services, url = "http://127.0.0.1:5002", image_id = image_name)
         with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
             fh.write(client_launch)
     except Exception, e:
@@ -104,13 +159,15 @@ def uploadFile(ros_file, manifest_file, comments):
         
     shutil.rmtree(temp_path)
      
-    '''Insert a new record to the image table in the database'''   
-    image_record = Image(imagename = image_name, uploadname = ros_file.filename, comments = comments, uploadtime = datetime.now(), uploaduser = current_user.email)
+    '''Insert a new record to the image table in the database'''  
+
+    image_record = Image(imagename = image_name, uploadname = ros_file.filename, comments = comments, uploadtime = datetime.now(), uploaduser = current_user.email, published_topics = ListToString(published_topics), subscribed_topics = ListToString(subscribed_topics), advertised_services = ListToString(advertised_services), advertised_actions = ListToString(advertised_actions))
     db.session.add(image_record)
     db.session.commit()
     
     logging.info('Uploading file %s to robotcloud successfully!', ros_file.filename)
-    return None
+    
+    return "None;"+image_name
 
 def getContainerPort(image_name, cmd):
     logging.info('Starting a new container with image %s', image_name)

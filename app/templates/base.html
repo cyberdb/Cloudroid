@@ -65,7 +65,8 @@
              <ul class="nav nav-sidebar">
               {% set navigation_bar = [
                 ('/upload', 'upload', 'Upload New ROS Package'),
-                ('/manage', 'manage', 'Manage Existing Packages'),
+                ('/images', 'images', 'Manage Existing Images'),
+		('/containers','containers','Manage Existing Containers'),
               ] -%}
               {% set active_page = active_page|default('index') -%}
               {% for href, id, caption in navigation_bar %}

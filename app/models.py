@@ -1,3 +1,4 @@
+#coding:utf-8
 from werkzeug import generate_password_hash, check_password_hash
 from app import db
 
@@ -41,8 +42,11 @@ class Image(db.Model):
     comments = db.Column(db.String(100))
     uploadtime = db.Column(db.DateTime())
     uploaduser = db.Column(db.String(100))
+    published_topics = db.Column(db.String(100))
+    subscribed_topics = db.Column(db.String(100))
+    advertised_services = db.Column(db.String(100))
+    advertised_actions = db.Column(db.String(100))
     
-
 class Container(db.Model):
     __tablename__ = 'containers'
     uid = db.Column(db.Integer, primary_key = True)

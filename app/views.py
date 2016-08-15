@@ -1,13 +1,19 @@
+#coding:utf-8
 from flask import Flask, request, redirect, url_for
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
+from flask import jsonify,send_from_directory,abort
 from app import app, db, lm
 from app.models import User
 from app.dockerops import *
 from app.supervise_containers import *
+import os, sys
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 port = 9090
-
+downloadFileName = None
 @lm.user_loader
 def load_user(uid):
     return User.query.get(int(uid))
@@ -81,12 +87,56 @@ def upload():
         param_do = form.do_action.data
         
         if (param_do == 'upload'):
-            action_error_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
-        
-        succeed = (action_error_msg == None)
-        return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)    
+            action_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
+        action_list = action_msg.split(";")
+        action_error_msg = action_list[0]
+        proxy_name = action_list[1]
+        succeed = (action_error_msg == "None")
+        if succeed == True:
+            return render_template('download.html',download_url = "http://127.0.0.1:5002/download/"+proxy_name)
+        else:
+            return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)   
          
     return render_template('upload.html',form=form, action_error_msg = None, succeed = False)
+
+@app.route('/download/<string:proxy_name>', methods=['GET'])
+def download(proxy_name):
+    from app.forms import UploadForm
+    
+    form = UploadForm()
+    proxy_name_zip = proxy_name + ".zip"
+    path1 = app.root_path+'/download'
+    path2 =  os.path.join(path1, proxy_name_zip)
+    if os.path.exists(path2):
+        return send_from_directory(path1,proxy_name_zip,as_attachment=True)
+    action_error_msg = downloadFileBuild(proxy_name)
+    if None == action_error_msg:
+        return send_from_directory(path1,proxy_name_zip,as_attachment=True)
+    else:
+        return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = False)
+
+
+@app.route('/images', methods=['GET'])
+def images():
+    from app import db, models 
+        
+    images = models.Image.query.all()
+    result = []
+    part_line = {'imagename':'default','uploadname':'default','uploaduser':'default','comments':'default'}
+    #part_line = {}
+    for i in images:
+        part_line['imagename'] = i.imagename
+        part_line['uploadname'] = i.uploadname
+        part_line['uploaduser'] = i.uploaduser
+        part_line['comments'] = i.comments
+        result.append(part_line)
+        part_line = {}
+    return render_template('images.html',imagetables = result)
+  
+@app.route('/detailed/<string:image_name>', method=['GET'])
+def detailed():
+    return render_template('detailed.html')
+
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
