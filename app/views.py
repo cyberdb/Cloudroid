@@ -132,13 +132,16 @@ def images():
         result.append(part_line)
         part_line = {}
     return render_template('images.html',imagetables = result)
+
   
-@app.route('/detailed/<string:image_name>', methods=['GET'])
-def detailed(image_name):
+@app.route('/idetailed/<string:image_name>', methods=['GET'])
+def idetailed(image_name):
     from app import db, models 
     
     image = models.Image.query.filter_by(imagename = image_name).first()
-    return render_template('detailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = StringToList(image.subscribed_topics), published_topics = StringToList(image.published_topics), advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
+    return render_template('idetailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = StringToList(image.subscribed_topics), published_topics = StringToList(image.published_topics), advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
+
+
 
 @app.route('/delete/<string:image_name>', methods=['GET'])
 def delete(image_name):
@@ -149,6 +152,16 @@ def delete(image_name):
     db.session.commit()
     return render_template('delete.html', imagename = image_name)
 
+@app.route('/containers', methods=['GET'])
+def containers():
+    containeri = containerinfo()
+    return render_template('containers.html', containertables = containeri)
+
+@app.route('/remove/<string:containerid>', methods=['GET'])
+def remove(containerid):
+    removeContainer(containerid)
+    containeri = containerinfo()
+    return render_template('containers.html', containertables = containeri)
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
@@ -168,15 +181,17 @@ def ping(container_id):
     from models import Container
     finding = Container.query.filter_by(containerid=container_id).first()
     if finding is not None:
-        u = models.Container(containerid=container_id, createdtime=str(time.time()))
+        image_name = finding.imagename
+        uploadn = finding.uploadname
+        usern = finding.username
+        firstcreatetime = finding.firstcreatetime
+        u = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime)
         db.session.add(u) 
         db.session.commit() 
         db.session.delete(finding)
         db.session.commit()
     else:
-        u = models.Container(containerid=container_id, createdtime=str(time.time()))
-        db.session.add(u) 
-        db.session.commit() 
+        return "The container has been removed!" 
     
     return "There are existing containers."
         

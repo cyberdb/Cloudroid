@@ -51,4 +51,8 @@ class Container(db.Model):
     __tablename__ = 'containers'
     uid = db.Column(db.Integer, primary_key = True)
     containerid = db.Column(db.String(100))
-    createdtime = db.Column(db.String(100))    
+    createdtime = db.Column(db.String(100))
+    imagename =  db.Column(db.String(100))
+    uploadname =  db.Column(db.String(100))
+    username =  db.Column(db.String(100))
+    firstcreatetime = db.Column(db.DateTime()) 

@@ -2,7 +2,7 @@
 import zipfile, os, shutil, json, time, logging
 from docker import Client
 from werkzeug import secure_filename
-from app.models import Image
+from app.models import Image,Container
 from app import db, models 
 from datetime import datetime
 from flask_login import current_user
@@ -200,7 +200,30 @@ def getContainerPort(image_name, cmd):
         host_port = response[0].get('HostPort')
 
     logging.info('New container is started. Websocket port on the host machine is %s.', host_port)
+    image = models.Image.query.filter_by(imagename = image_name).first()
+    uploadn = image.uploadname
+    usern = image.uploaduser
+    container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now())
+    db.session.add(container_record)
+    db.session.commit()
     return host_port+" "+container_id
+
+def containerinfo():
+ 
+        
+    containers = models.Container.query.all()
+    result = []
+    part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default'}
+    #part_line = {}
+    for i in containers:
+        part_line['containerid'] = i.containerid[0:12]
+        part_line['imagename'] = i.imagename
+        part_line['filename'] = i.uploadname
+        part_line['user'] = i.username
+        part_line['createtime'] = i.firstcreatetime
+        result.append(part_line)
+        part_line = {}
+    return result
 
 def listContainner():
     logging.info('The query of existing containers')
@@ -218,12 +241,27 @@ def stopContainer(container_id):
     
     try:
         docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.remove_container(container = container_id, force = True)
+        docker_client.stop(container = container_id)
+        #docker_client.remove_container(container = container_id, force = True)
                
     except Exception, e:
         logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
         return
+     
+def removeContainer(container_id):
+    logging.info('Remove the container %s', container_id)
     
-    
-    
+    try:
+        docker_client = Client(base_url=DOCKER_PORT)
+        docker_client.remove_container(container = container_id, force = True)
+        remove_con = models.Container.query.all()
+        for i in remove_con:
+            if i.containerid[0:12] == container_id:
+                db.session.delete(i)
+                db.session.commit()
+                break
+               
+    except Exception, e:
+        logging.error('Unable to remove the container %s. \nReason: %s', container_id, str(e))
+        return
     
