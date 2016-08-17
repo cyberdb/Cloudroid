@@ -2,17 +2,20 @@
 {% set active_page = "download" %} 
 {% block content %}
 <html lang="zh-cn">
+
+
+
 <div>
-<h2>所有的镜像</h2>
+<h2>All of the images</h2>
 
 <table class="dataintable"
 border = "1"
 bdcolor = "gray">
 <tr>
-<th style="width:10%;">镜像名</th>
-<th style="width:10%;">文件名</th>
-<th style="width:20%;">上传者</th>
-<th style="width:60%;">描述</th>
+<th style="width:10%;">Image Name</th>
+<th style="width:10%;">File Name</th>
+<th style="width:20%;">The uploader</th>
+<th style="width:60%;">Comments</th>
 </tr>
   {% for image in imagetables %}
     	<tr>

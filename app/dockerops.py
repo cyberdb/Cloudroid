@@ -15,16 +15,16 @@ class StreamLineBuildGenerator(object):
     def __init__(self, json_data):
         self.__dict__ = json.loads(json_data)
         
-def ListToString(lista = []):
-    stringa = ""
+def ListToString(lista):
     if lista.__len__() == 0:
         stringa = "None"
         return stringa
     else:
-        for i in range(0,lista.__len__()):
-            lista[i] = str(lista[i]+";")
         stringa = ""
-        stringa.join(lista)
+        for i in range(0,lista.__len__()):
+            if (lista[i].split("#")).__len__() <= 1:
+                lista[i] = str(lista[i]+"#")
+        stringa = stringa.join(lista)
         return stringa
 
 def StringToList(stringa):
@@ -32,7 +32,8 @@ def StringToList(stringa):
         lista = []
         return lista
     else:
-        lista = stringa.split(';')
+        lista = stringa.split('#')
+        lista.pop()
         return lista
 
 def downloadFileBuild(downloadFileName):
@@ -160,7 +161,6 @@ def uploadFile(ros_file, manifest_file, comments):
     shutil.rmtree(temp_path)
      
     '''Insert a new record to the image table in the database'''  
-
     image_record = Image(imagename = image_name, uploadname = ros_file.filename, comments = comments, uploadtime = datetime.now(), uploaduser = current_user.email, published_topics = ListToString(published_topics), subscribed_topics = ListToString(subscribed_topics), advertised_services = ListToString(advertised_services), advertised_actions = ListToString(advertised_actions))
     db.session.add(image_record)
     db.session.commit()

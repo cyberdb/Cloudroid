@@ -133,9 +133,21 @@ def images():
         part_line = {}
     return render_template('images.html',imagetables = result)
   
-@app.route('/detailed/<string:image_name>', method=['GET'])
-def detailed():
-    return render_template('detailed.html')
+@app.route('/detailed/<string:image_name>', methods=['GET'])
+def detailed(image_name):
+    from app import db, models 
+    
+    image = models.Image.query.filter_by(imagename = image_name).first()
+    return render_template('detailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = StringToList(image.subscribed_topics), published_topics = StringToList(image.published_topics), advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
+
+@app.route('/delete/<string:image_name>', methods=['GET'])
+def delete(image_name):
+    from app import db, models 
+    
+    image = models.Image.query.filter_by(imagename = image_name).first()
+    db.session.delete(image)
+    db.session.commit()
+    return render_template('delete.html', imagename = image_name)
 
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
