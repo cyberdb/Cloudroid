@@ -163,6 +163,18 @@ def remove(containerid):
     containeri = containerinfo()
     return render_template('containers.html', containertables = containeri)
 
+@app.route('/Stop/<string:containerid>', methods=['GET'])
+def stop(containerid):
+    stopContainer(containerid)
+    containeri = containerinfo()
+    return render_template('containers.html', containertables = containeri)
+
+@app.route('/Start/<string:containerid>', methods=['GET'])
+def start(containerid):
+    startContainer(containerid)
+    containeri = containerinfo()
+    return render_template('containers.html', containertables = containeri)
+
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
     
@@ -184,8 +196,9 @@ def ping(container_id):
         image_name = finding.imagename
         uploadn = finding.uploadname
         usern = finding.username
+        containerstopped = finding.containerstopped
         firstcreatetime = finding.firstcreatetime
-        u = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime)
+        u = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = containerstopped)
         db.session.add(u) 
         db.session.commit() 
         db.session.delete(finding)

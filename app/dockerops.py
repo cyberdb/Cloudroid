@@ -203,7 +203,7 @@ def getContainerPort(image_name, cmd):
     image = models.Image.query.filter_by(imagename = image_name).first()
     uploadn = image.uploadname
     usern = image.uploaduser
-    container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now())
+    container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now(), containerstopped = False)
     db.session.add(container_record)
     db.session.commit()
     return host_port+" "+container_id
@@ -213,7 +213,7 @@ def containerinfo():
         
     containers = models.Container.query.all()
     result = []
-    part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default'}
+    part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default','containerstopped':'Stop'}
     #part_line = {}
     for i in containers:
         part_line['containerid'] = i.containerid[0:12]
@@ -221,6 +221,11 @@ def containerinfo():
         part_line['filename'] = i.uploadname
         part_line['user'] = i.username
         part_line['createtime'] = i.firstcreatetime
+        
+        if i.containerstopped:
+            part_line['containerstopped'] = 'Start'
+        else:
+            part_line['containerstopped'] = 'Stop'
         result.append(part_line)
         part_line = {}
     return result
@@ -242,12 +247,55 @@ def stopContainer(container_id):
     try:
         docker_client = Client(base_url=DOCKER_PORT)
         docker_client.stop(container = container_id)
-        #docker_client.remove_container(container = container_id, force = True)
+        stop_con = models.Container.query.all()
+        for i in stop_con:
+            if i.containerid[0:12] == container_id:
+                container_id = i.containerid
+                createdtime = i.createdtime
+                image_name = i.imagename
+                uploadn = i.uploadname
+                usern = i.username
+                firstcreatetime = i.firstcreatetime
+                container_record = Container(containerid = container_id, createdtime = createdtime, imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = True)
+                db.session.add(container_record)
+                db.session.commit()
+                db.session.delete(i)
+                db.session.commit()
+                break
+
                
     except Exception, e:
         logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
         return
      
+def startContainer(container_id):
+    logging.info('Starting the container %s', container_id)
+    
+    try:
+        docker_client = Client(base_url=DOCKER_PORT)
+        docker_client.start(container = container_id)
+        start_con = models.Container.query.all()
+        for i in start_con:
+            if i.containerid[0:12] == container_id:
+                container_id = i.containerid
+                createdtime = i.createdtime
+                image_name = i.imagename
+                uploadn = i.uploadname
+                usern = i.username
+                firstcreatetime = i.firstcreatetime
+                container_record = Container(containerid = container_id, createdtime = createdtime, imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = False)
+                db.session.add(container_record)
+                db.session.commit()
+                db.session.delete(i)
+                db.session.commit()
+                break
+
+               
+    except Exception, e:
+        logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
+        return         
+     
+
 def removeContainer(container_id):
     logging.info('Remove the container %s', container_id)
     

@@ -55,4 +55,5 @@ class Container(db.Model):
     imagename =  db.Column(db.String(100))
     uploadname =  db.Column(db.String(100))
     username =  db.Column(db.String(100))
-    firstcreatetime = db.Column(db.DateTime()) 
+    firstcreatetime = db.Column(db.DateTime())
+    containerstopped = db.Column(db.Boolean) 

@@ -25,7 +25,9 @@ bdcolor = "gray">
 	<td>{{container.filename}}</td>
 	<td>{{container.user}}</td>
 	<td>{{container.createtime}}</td>
-	<td><button onclick="javascript:window.location.href='/stop/{{ container.containerid }}';">Stop</button></td>
+	
+	<td><button onclick="javascript:window.location.href='/{{container.containerstopped}}/{{ container.containerid }}';">{{container.containerstopped}}</button></td>
+	
 	<td><button onclick="javascript:window.location.href='/remove/{{ container.containerid }}';">Remove</button></td>
 	</tr>
   {% endfor %}
