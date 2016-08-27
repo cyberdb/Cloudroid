@@ -9,13 +9,12 @@ from app.dockerops import *
 from app.supervise_containers import *
 import os, sys
 import socket
+from app.commonset import *
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-url = 'http://127.0.0.1:5002'
-port = 9090
-downloadFileName = None
+
 
 
 @lm.user_loader
@@ -98,14 +97,10 @@ def upload():
         else:
             action_error_msg = action_list[0]
             proxy_name = action_list[1]
-        serverip = models.ServerIP.query.first()
-        if serverip.serverip == None:
-            url = url
-        else:
-            url = serverip.serverip
+        url_base = url()
         succeed = (action_error_msg == "None")
         if succeed == True:
-            return render_template('download.html',download_url = url+"/download/"+proxy_name)
+            return render_template('download.html',download_url = url_base+"/download/"+proxy_name)
         else:
             return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)   
          
@@ -205,8 +200,12 @@ def start(containerid):
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
   
-    hostname = socket.getfqdn(socket.gethostname(  ))
-    ipaddr = socket.gethostbyname(hostname)
+
+    serverip = models.ServerIP.query.first()
+    if serverip.serverip == None:
+        ipaddr = ipaddr()
+    else:
+        ipaddr = serverip.serverip
     return 'ws://' + ipaddr + ':' + str(getContainerPort(image_name, ''))
     
       

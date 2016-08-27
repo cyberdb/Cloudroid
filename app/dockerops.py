@@ -2,17 +2,18 @@
 import zipfile, os, shutil, json, time, logging
 from docker import Client
 from werkzeug import secure_filename
-from app.models import Image,Container
 from app import db, models 
+from app.models import *
+from app.commonset import *
 from datetime import datetime
 from flask_login import current_user
 from flask.templating import render_template
 from flask.globals import session
 from Tkinter import image_names
 
+
 current_milli_time = lambda: int(round(time.time() * 1000))
-DOCKER_PORT = 'unix://var/run/docker.sock'
-url = 'http://127.0.0.1:5002'
+
 
 class StreamLineBuildGenerator(object):
     def __init__(self, json_data):
@@ -35,13 +36,9 @@ def downloadFileBuild(downloadFileName):
             
         unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
         os.system(unzip_cmd)
-        serverip = models.ServerIP.query.first()
-        if serverip.serverip == None:
-            url = url
-        else:
-            url = serverip.serverip
+        client_url = url()
         client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
-                                        advertised_services = advertised_services, url = url, image_id = image_name)
+                                        advertised_services = advertised_services, url = client_url, image_id = image_name)
         with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
             fh.write(client_launch)
         zip_cmd = 'zip -r ' + image_name +".zip " + "./client"
@@ -289,12 +286,19 @@ def removeContainer(container_id):
         docker_client.remove_container(container = container_id, force = True)
         remove_con = models.Container.query.all()
         for i in remove_con:
-            if i.containerid[0:12] == container_id:
+            if (i.containerid[0:12] == container_id)or(i.containerid == container_id):
                 db.session.delete(i)
                 db.session.commit()
                 break
                
     except Exception, e:
+        if str(e).find('No such container:'):
+            remove_con = models.Container.query.all()
+            for i in remove_con:
+                if (i.containerid[0:12] == container_id)or(i.containerid == container_id):
+                    db.session.delete(i)
+                    db.session.commit()
+                    break
         logging.error('Unable to remove the container %s. \nReason: %s', container_id, str(e))
         return
 

@@ -29,7 +29,7 @@ lm.login_view = 'login'
 from supervise_containers import abandoned_container
 from supervise_containers import reset_container_db
 initCon = reset_container_db()
-print initCon
+#print initCon
       
       
 container_dropping_thread = abandoned_container() 
