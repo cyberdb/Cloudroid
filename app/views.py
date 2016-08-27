@@ -8,12 +8,16 @@ from app.models import User
 from app.dockerops import *
 from app.supervise_containers import *
 import os, sys
+import socket
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+url = 'http://127.0.0.1:5002'
 port = 9090
 downloadFileName = None
+
+
 @lm.user_loader
 def load_user(uid):
     return User.query.get(int(uid))
@@ -89,16 +93,41 @@ def upload():
         if (param_do == 'upload'):
             action_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
         action_list = action_msg.split(";")
-        action_error_msg = action_list[0]
-        proxy_name = action_list[1]
+        if len(action_list) != 2:
+            action_error_msg = action_list[0]
+        else:
+            action_error_msg = action_list[0]
+            proxy_name = action_list[1]
+        serverip = models.ServerIP.query.first()
+        if serverip.serverip == None:
+            url = url
+        else:
+            url = serverip.serverip
         succeed = (action_error_msg == "None")
         if succeed == True:
-            return render_template('download.html',download_url = "http://127.0.0.1:5002/download/"+proxy_name)
+            return render_template('download.html',download_url = url+"/download/"+proxy_name)
         else:
             return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)   
          
     return render_template('upload.html',form=form, action_error_msg = None, succeed = False)
 
+@app.route('/setting', methods=['GET', 'POST'])
+def setting():
+    from app.forms import SetForm
+    
+    form = SetForm()
+    if form.validate_on_submit():
+        servers = models.ServerIP.query.all()
+        for server in servers:
+            db.session.delete(server)
+            db.session.commit()
+        serverip = form.ip.data
+        u = models.ServerIP(serverip = serverip)
+        db.session.add(u)
+        db.session.commit()
+        return render_template('setting.html',form=form, succeed = True)
+    return render_template('setting.html',form=form)
+    
 @app.route('/download/<string:proxy_name>', methods=['GET'])
 def download(proxy_name):
     from app.forms import UploadForm
@@ -118,12 +147,10 @@ def download(proxy_name):
 
 @app.route('/images', methods=['GET'])
 def images():
-    from app import db, models 
-        
+    from app import db, models         
     images = models.Image.query.all()
     result = []
     part_line = {'imagename':'default','uploadname':'default','uploaduser':'default','comments':'default'}
-    #part_line = {}
     for i in images:
         part_line['imagename'] = i.imagename
         part_line['uploadname'] = i.uploadname
@@ -139,18 +166,18 @@ def idetailed(image_name):
     from app import db, models 
     
     image = models.Image.query.filter_by(imagename = image_name).first()
+    
     return render_template('idetailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = StringToList(image.subscribed_topics), published_topics = StringToList(image.published_topics), advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
 
 
 
 @app.route('/delete/<string:image_name>', methods=['GET'])
 def delete(image_name):
-    from app import db, models 
     
-    image = models.Image.query.filter_by(imagename = image_name).first()
-    db.session.delete(image)
-    db.session.commit()
-    return render_template('delete.html', imagename = image_name)
+    error_msg = deleteImage(image_name)
+    
+    return render_template('delete.html', imagename = image_name, error_msg = error_msg)
+    
 
 @app.route('/containers', methods=['GET'])
 def containers():
@@ -177,9 +204,7 @@ def start(containerid):
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
-    
-    import socket
-    
+  
     hostname = socket.getfqdn(socket.gethostname(  ))
     ipaddr = socket.gethostbyname(hostname)
     return 'ws://' + ipaddr + ':' + str(getContainerPort(image_name, ''))
@@ -187,8 +212,7 @@ def get_instance(image_name):
       
 @app.route('/ping/<string:container_id>', methods=['GET'])
 def ping(container_id):
-    
-    
+     
     from app import db, models
     from models import Container
     finding = Container.query.filter_by(containerid=container_id).first()

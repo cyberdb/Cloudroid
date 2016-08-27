@@ -27,11 +27,11 @@ lm.init_app(app)
 lm.login_view = 'login'
 
 from supervise_containers import abandoned_container
-#  from supervise_containers import reset_container_db
-#  initCon = reset_container_db()
-#  print initCon
-     
-     
+from supervise_containers import reset_container_db
+initCon = reset_container_db()
+print initCon
+      
+      
 container_dropping_thread = abandoned_container() 
 container_dropping_thread.start() 
 

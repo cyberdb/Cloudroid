@@ -56,4 +56,9 @@ class Container(db.Model):
     uploadname =  db.Column(db.String(100))
     username =  db.Column(db.String(100))
     firstcreatetime = db.Column(db.DateTime())
-    containerstopped = db.Column(db.Boolean) 
+    containerstopped = db.Column(db.Boolean)
+    
+class ServerIP(db.Model):
+    __tablename__ = 'ServerIP'
+    uid = db.Column(db.Integer, primary_key = True)
+    serverip = db.Column(db.String(100))

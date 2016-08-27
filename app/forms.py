@@ -26,3 +26,6 @@ class UploadForm(Form):
     manifest_file = FileField('Upload Manifiest File Name', validators=[FileRequired('The mainifest filename is required'), FileAllowed(['json'], 'Json manifest file only!')])
     comments = StringField('Optional Comments')
     
+class SetForm(Form):
+    ip = StringField('IP', validators=[DataRequired("Please enter the IP of server.")])
+        

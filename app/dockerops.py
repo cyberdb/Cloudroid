@@ -7,34 +7,16 @@ from app import db, models
 from datetime import datetime
 from flask_login import current_user
 from flask.templating import render_template
+from flask.globals import session
+from Tkinter import image_names
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 DOCKER_PORT = 'unix://var/run/docker.sock'
+url = 'http://127.0.0.1:5002'
 
 class StreamLineBuildGenerator(object):
     def __init__(self, json_data):
         self.__dict__ = json.loads(json_data)
-        
-def ListToString(lista):
-    if lista.__len__() == 0:
-        stringa = "None"
-        return stringa
-    else:
-        stringa = ""
-        for i in range(0,lista.__len__()):
-            if (lista[i].split("#")).__len__() <= 1:
-                lista[i] = str(lista[i]+"#")
-        stringa = stringa.join(lista)
-        return stringa
-
-def StringToList(stringa):
-    if stringa == "None":
-        lista = []
-        return lista
-    else:
-        lista = stringa.split('#')
-        lista.pop()
-        return lista
 
 def downloadFileBuild(downloadFileName):
     images = models.Image.query.filter_by(imagename = downloadFileName).first()
@@ -53,8 +35,13 @@ def downloadFileBuild(downloadFileName):
             
         unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
         os.system(unzip_cmd)
+        serverip = models.ServerIP.query.first()
+        if serverip.serverip == None:
+            url = url
+        else:
+            url = serverip.serverip
         client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
-                                        advertised_services = advertised_services, url = "http://127.0.0.1:5002", image_id = image_name)
+                                        advertised_services = advertised_services, url = url, image_id = image_name)
         with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
             fh.write(client_launch)
         zip_cmd = 'zip -r ' + image_name +".zip " + "./client"
@@ -110,6 +97,11 @@ def uploadFile(ros_file, manifest_file, comments):
     advertised_services = manifest.get('advertised_services')
     advertised_actions = manifest.get('advertised_actions')   
     start_cmds = manifest.get('start_cmds')
+    mem_limit = manifest.get('mem_limit')
+    memswap_limit = manifest.get('memswap_limit')
+    cpushares = manifest.get('cpushares')
+    cpusetcpus = manifest.get('cpusetcpus')
+    container_limits = {'memory':int(mem_limit), 'memswap':int(memswap_limit), 'cpushares':int(cpushares), 'cpusetcpus':cpusetcpus}
   
     if start_cmds == None :
         error_string = 'Manifest file {} does not contain start_cmds. Generate docker image failed'.format(manifest_file.getFileName())
@@ -123,7 +115,7 @@ def uploadFile(ros_file, manifest_file, comments):
     logging.info('Generating docker image with tag %s', image_name)
     try:
         docker_client = Client(base_url=DOCKER_PORT)
-        generator = docker_client.build(path=".", rm = True, tag = image_name)
+        generator = docker_client.build(path=".", rm = True, tag = image_name, container_limits = container_limits)
         
         '''Check any error by inspecting the output of build()''' 
         for line in generator:
@@ -138,23 +130,6 @@ def uploadFile(ros_file, manifest_file, comments):
                 continue
     except Exception, e:
         error_string = 'Unable to generating docker image with name {}. \nReason: {}'.format(image_name, str(e))
-        logging.error(error_string)
-        return error_string
-    
-    '''Generating client-side proxy'''
-    client_path='./client'
-    try:
-        if os.path.exists(client_path):
-            shutil.rmtree(client_path)
-            
-        unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
-        os.system(unzip_cmd)
-        client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
-                                        advertised_services = advertised_services, url = "http://127.0.0.1:5002", image_id = image_name)
-        with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
-            fh.write(client_launch)
-    except Exception, e:
-        error_string = 'Unable to generating client proxy for image {}. \nReason: {}'.format(image_name, str(e))
         logging.error(error_string)
         return error_string
         
@@ -173,7 +148,7 @@ def getContainerPort(image_name, cmd):
     logging.info('Starting a new container with image %s', image_name)
     
     try:
-        '''Create container with image_name, Rosbridge port 9090 is maaped into a random port on the host machine'''
+        '''Create container with image_name, Rosbridge port 9090 is mapped into a random port on the host machine'''
         docker_client = Client(base_url=DOCKER_PORT)
         config=docker_client.create_host_config(port_bindings={9090: None})
         container = docker_client.create_container(image=image_name, ports = [9090], host_config = config)
@@ -200,42 +175,52 @@ def getContainerPort(image_name, cmd):
         host_port = response[0].get('HostPort')
 
     logging.info('New container is started. Websocket port on the host machine is %s.', host_port)
-    image = models.Image.query.filter_by(imagename = image_name).first()
-    uploadn = image.uploadname
-    usern = image.uploaduser
-    container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now(), containerstopped = False)
-    db.session.add(container_record)
-    db.session.commit()
+    logging.info('Store the container infomation to the db')
+    try:
+        imageinfo = models.Image.query.filter_by(imagename = image_name).first()
+        uploadn = imageinfo.uploadname
+        usern = imageinfo.uploaduser
+        container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now(), containerstopped = False)
+        db.session.add(container_record)
+        db.session.commit()
+    except Exception, e:
+        logging.error('Failed to store the container info to the db. \nReason: %s', str(e))
+        return
     return host_port+" "+container_id
 
 def containerinfo():
- 
+    logging.info('The query of containers info list')
+    
+    try:  
+        containers = models.Container.query.all()
+        result = []
+        part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default','containerstopped':'Stop'}
+        for i in containers:
+            part_line['containerid'] = i.containerid[0:12]
+            part_line['imagename'] = i.imagename
+            part_line['filename'] = i.uploadname
+            part_line['user'] = i.username
+            part_line['createtime'] = i.firstcreatetime        
+            if i.containerstopped:
+                part_line['containerstopped'] = 'Start'
+            else:
+                part_line['containerstopped'] = 'Stop'
+            result.append(part_line)
+            part_line = {}
         
-    containers = models.Container.query.all()
-    result = []
-    part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default','containerstopped':'Stop'}
-    #part_line = {}
-    for i in containers:
-        part_line['containerid'] = i.containerid[0:12]
-        part_line['imagename'] = i.imagename
-        part_line['filename'] = i.uploadname
-        part_line['user'] = i.username
-        part_line['createtime'] = i.firstcreatetime
-        
-        if i.containerstopped:
-            part_line['containerstopped'] = 'Start'
-        else:
-            part_line['containerstopped'] = 'Stop'
-        result.append(part_line)
-        part_line = {}
-    return result
+        return result
+            
+    except Exception, e:
+        logging.error('Unable to list the containers info. \nReason: %s', str(e))
+        return
+    
 
 def listContainner():
     logging.info('The query of existing containers')
     
     try:
         docker_client = Client(base_url=DOCKER_PORT)
-        return docker_client.containers(quiet=True)#Only running containers are shown by default
+        return docker_client.containers(quiet=True, all=True)#Only running containers are shown by default
     
     except Exception, e:
         logging.error('Unable to list the containers. \nReason: %s', str(e))
@@ -312,4 +297,50 @@ def removeContainer(container_id):
     except Exception, e:
         logging.error('Unable to remove the container %s. \nReason: %s', container_id, str(e))
         return
+
+def deleteImage(image_name):
+    logging.info('Delete the image %s', image_name)
+    
+    try:
+        docker_client = Client(base_url=DOCKER_PORT)
+        docker_client.remove_image(image = image_name)
+        image = models.Image.query.filter_by(imagename = image_name).first()
+        db.session.delete(image)
+        db.session.commit() 
+    
+        
+    except Exception, e:
+        print str(e)
+        if (str(e).find('No such image:')):
+            image = models.Image.query.filter_by(imagename = image_name).first()
+            db.session.delete(image)
+            db.session.commit()
+            error_string = 'Unable to delete the image {}. \nReason: {}. Delete the record'.format(image_name, str(e)) 
+        else:
+            error_string = 'Unable to delete the image {}. \nReason: {}'.format(image_name, str(e))
+        logging.error(error_string)
+        return error_string
+    
+    return None   
+    
+def ListToString(lista):
+    if lista.__len__() == 0:
+        stringa = "None"
+        return stringa
+    else:
+        stringa = ""
+        for i in range(0,lista.__len__()):
+            if (lista[i].split("#")).__len__() <= 1:
+                lista[i] = str(lista[i]+"#")
+        stringa = stringa.join(lista)
+        return stringa
+
+def StringToList(stringa):
+    if stringa == "None":
+        lista = []
+        return lista
+    else:
+        lista = stringa.split('#')
+        lista.pop()
+        return lista
     
