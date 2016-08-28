@@ -1,5 +1,4 @@
-micROS-cloud 
-
+# micROS-cloud
 Introduction
 
 mic-ROS cloud is a cloud platform which can provide service in the 'cloud-robot' architecture. It is a typical example of PaaS(platform as a service). mic-ROS supports the direct deployment of Robot Operating System(ROS)(http://www.ros.org/) software package which could defined by user because of the usage of docker(http://www.docker.com/). And it provides the proxy of client connecting to the platform to obtain services.
