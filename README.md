@@ -10,7 +10,9 @@ By adopting the docker container technology in the back-end, a ROS package which
 Please contact us through siteen@outlook.com or bding@msn.com. Any feedback would be greatly appreciated.
 
 # Release notes
+
 v0.10 [2016-08-31]
+
 1. Initial open source release
 
 
