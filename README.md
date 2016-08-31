@@ -1,15 +1,15 @@
 # micROS-cloud
 Introduction
 
-mic-ROS cloud is a cloud platform which can provide service in the 'cloud-robot' architecture. It is a typical example of PaaS(platform as a service). mic-ROS supports the direct deployment of Robot Operating System(ROS)(http://www.ros.org/) software package which could defined by user because of the usage of docker(http://www.docker.com/). And it provides the proxy of client connecting to the platform to obtain services.
+micROS-cloud is a cloud robotic platform which supports the direct deployment of ROS software packages onto the cloud. Basically, it can be regarded as a PAAS platform which adopts the ROS application model. A ROS package can be covnerted into a cloud service automatically. The robotic applications can access the cloud service remotely in an on-demand style through a WebSocket protocol.
 
-(1) User-defined and dynamically generated service. User can provide ros packages followed by our rules to the platform to defined special functions.
+The service access is purely based on a cloud service paradigm, which means that you need not configure ROS master and other parameters. The robotic apllications which access the cloud services also need no modification, because micROS-cloud can generate a stub ROS package with the same interface of the original ROS package, which acts as a loccal proxy of the remote cloud service.
 
-(2) The automatic generation of user agent. After the uploading of ros package, it can generate the proxy for user to use the service. The proxy can be setup easily with the micROS-cloud-client(https://github.com/xiteen/micROS-cloud-client) installed in advance. It only consume a little computing resources and storage resources. Most of the caculation work is performed by the platform.
-
-(3) The remote control of platform. The provided functions and running services can be controled and showed by web.
+By adopting the docker container technology in the back-end, a ROS package which is orignally designed for a single robot can serve multiple robots simultaneously by dynamically instantiation of the servant in the cloud. And by specifying the resource demand of the ROS package (e.g., mem, CPU, etc.), the quaility of a service can be assured by the internal mechanisms of micROS-cloud.
 
 Please contact us through siteen@outlook.com or bding@msn.com. Any feedback would be greatly appreciated.
+
+
 
 
 
