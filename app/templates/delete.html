@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% set active_page = "index" %}
+{% block content %}
+
+<div id="hiding">
+  {% if error_msg %}
+    <div class="alert alert-danger" role="alert">
+      <b>ERROR:</b> Failed to delete image <b>'{{ imagename }}'</b></b>.
+    </div>
+    <div class="panel panel-danger">
+      <div class="panel-heading">
+        <h3 class="panel-title">Error Message</h3>
+      </div>
+      <div class="panel-body">
+          <pre class="text-danger bg-danger">{{ error_msg }}</pre>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-success" role="alert">
+      <b>OK:</b> Succeeded to delete image <b>'{{ imagename }}'</b></b>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

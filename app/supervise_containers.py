@@ -1,36 +1,69 @@
-#coding:utf-8
+# coding:utf-8
 #!/usr/bin/python
-# Filename: global_variable.py
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2016, micROS Team
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# 
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# 
+# * Neither the name of micROS-drt nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-containerIdList = []
-lastChangeTimeList = []
 
 import threading  
 from dockerops import stopContainer
+from dockerops import removeContainer
+from dockerops import listContainner
 import time
+from app import db, models 
+from models import Container
+
+def reset_container_db():#Initialize the db with the information of running containers
+
+    cons = Container.query.all()
+    for j in cons:
+        db.session.delete(j)
+        db.session.commit() 
+    containerList = listContainner()
+    for i in xrange(len(containerList)):
+        removeContainer(containerList[i]['Id'])
+    return 'Container db has been initialized!'
+
+mutex=threading.Lock() 
 class abandoned_container(threading.Thread): #Find the abandoned container to remove
     def __init__(self):  
         threading.Thread.__init__(self)  
         
-   
-   
-   
-   
-    def run(self):   
+    def run(self):
+        mutex.acquire()
         while True:
-            print "containerIdList length"
-            print len(containerIdList)
-            for i in xrange(len(containerIdList)):
-                print containerIdList[i]
-                print "   "
-                print lastChangeTimeList[i]
-                if time.time()-lastChangeTimeList[i] > 60:
-                    stopContainer(containerIdList[i])
-                    print containerIdList[i]
-                    for j in range(i,len(containerIdList)-1):
-                        containerIdList[j] = containerIdList[j+1]
-                        lastChangeTimeList[j] = lastChangeTimeList[j+1]
-                    del containerIdList[-1]
-                    del lastChangeTimeList[-1]
+            
+            Containers = models.Container.query.all() 
+            for c in Containers:
+                if time.time()-float(c.createdtime) > 600:
+                    removeContainer(c.containerid)
+                    print "Stopped %s"%c.containerid
             time.sleep(10)
-            print "Stopping Stopping"
+            
+        mutex.release()

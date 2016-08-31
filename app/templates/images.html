@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set active_page = "download" %} 
+{% block content %}
+<html lang="zh-cn">
+
+
+
+<div>
+<h2>All of the images</h2>
+
+<table class="dataintable"
+border = "1"
+bdcolor = "gray">
+<tr>
+<th style="width:10%;">Image Name</th>
+<th style="width:10%;">File Name</th>
+<th style="width:20%;">The uploader</th>
+<th style="width:60%;">Comments</th>
+</tr>
+  {% for image in imagetables %}
+    	<tr>
+	<td><a href="/idetailed/{{image.imagename}}" title="HTML &lt;td&gt; 标签的 abbr 属性">{{image.imagename}}</a></td>
+	<td><i>{{image.uploadname}}</i></td>
+	<td>{{image.uploaduser}}</td>
+	<td>{{image.comments}}</td>
+	</tr>
+  {% endfor %}
+
+</table>
+</div>
+</html>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set active_page = "containers" %} 
+{% block content %}
+<html lang="zh-cn">
+
+
+
+<div>
+<h2>All of the containers</h2>
+
+<table class="dataintable"
+border = "1"
+bdcolor = "gray">
+<tr>
+<th style="width:20%;">Container ID</th>
+<th style="width:20%;">Image Name</th>
+<th style="width:20%;">File Name</th>
+<th style="width:20%;">The User</th>
+<th style="width:20%;">Create Time</th>
+</tr>
+  {% for container in containertables %}
+    	<tr>
+	<td>{{container.containerid}}</td>
+	<td>{{container.imagename}}</td>
+	<td>{{container.filename}}</td>
+	<td>{{container.user}}</td>
+	<td>{{container.createtime}}</td>
+	
+	<td><button onclick="javascript:window.location.href='/{{container.containerstopped}}/{{ container.containerid }}';">{{container.containerstopped}}</button></td>
+	
+	<td><button onclick="javascript:window.location.href='/remove/{{ container.containerid }}';">Remove</button></td>
+	</tr>
+  {% endfor %}
+
+</table>
+</div>
+</html>
+{% endblock %}

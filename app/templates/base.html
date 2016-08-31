@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <link rel="icon" href="{{ url_for('static',filename='img/favicon.ico') }}">
-
     <title>RobotCloud</title>
 
     <!-- Bootstrap core CSS -->
@@ -31,13 +30,15 @@
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container-fluid">
         <div class="navbar-header">
+	  
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="{{ url_for('index') }}">RobotCloud</a>
+	  <a class="navbar-brand" href="{{ url_for('index') }}"><img src="{{ url_for('static',filename='img/title.jpg') }}"  alt="micROS" height="35" width="35" /></a>
+          <a class="navbar-brand" href="{{ url_for('index') }}">micROS-RobotCloud</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -65,7 +66,9 @@
              <ul class="nav nav-sidebar">
               {% set navigation_bar = [
                 ('/upload', 'upload', 'Upload New ROS Package'),
-                ('/manage', 'manage', 'Manage Existing Packages'),
+                ('/images', 'images', 'Manage Existing Images'),
+		('/containers','containers','Manage Existing Containers'),
+		('/setting','setting','Setting Up The Server'),
               ] -%}
               {% set active_page = active_page|default('index') -%}
               {% for href, id, caption in navigation_bar %}

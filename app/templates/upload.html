@@ -31,7 +31,6 @@
       <tr>
         <td>
           <button type="submit" class="btn btn-info" name="do_action" value="upload" onclick="$('#loading').show();$('#hiding').hide();">Upload</button>
-          <button type="submit" class="btn btn-success" name="do_action" value="download" onclick="$('#loading').show();$('#hiding').hide();">Download Client Package</button>
         </td>
       </tr>
       {% if form.ros_file.errors + form.manifest_file.errors + form.comments.errors %}
