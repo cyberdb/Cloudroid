@@ -1,0 +1,14 @@
+{
+   "subscribed_topics": ["/tester1"],
+   "published_topics": ["/tester1reply"],
+   "advertised_services": [],
+   "advertised_actions": [],
+   
+   "start_cmds": ["rosrun server_test server"],
+
+   "mem_limit": "1073741824",
+   "memswap_limit" : "1073741824",
+   "cpushares":"100",
+   "cpusetcpus":"0,1"
+}
+   

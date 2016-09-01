@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set active_page = "download" %} 
+{% block content %}
+<html lang="zh-cn">
+<div>
+<h1><span style="color:blue;">Image name:</span> {{ imagename }}</h1>
+
+</div>
+<HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="80%" color=#987cb9 SIZE=10>
+<HR style="border:3 double #987cb9" width="80%" color=#987cb9 SIZE=3>
+<div>
+
+<h2>Uploading Information</h2>
+<div>
+<table class="dataintable uploading information" border = "1">
+  <tr>
+  <th style="width:33%;">File Name</th>
+  <th style="width:33%;">Uploader</th>
+  <th style="width:34%;">Uploading Time</th>
+  </tr>
+  <tr>
+      <td >{{uploadname}}</td>						
+      <td >{{uploaduser}}</td>
+      <td >{{uploadtime}}</td>
+			
+  </tr>
+</table>
+</div>
+
+<HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="80%" color=#987cb9 SIZE=3>
+
+<div>
+<h2>Directions for use</h2>
+<table class="dataintable using information" border = "1">
+  <tr>
+  <th style="width:25%;">Subscribing topics</th>
+  <th style="width:25%;">Publishing topics</th>
+  <th style="width:25%;">Advertising services</th>
+  <th style="width:25%;">Advertising actions</th>
+  </tr>
+  <tr>
+      <td >
+	{% for stopic in subscribed_topics %}
+    	<li>{{stopic}}</li>
+  	{% endfor %}
+      </td>						
+      <td >
+	{% for ptopic in published_topics %}
+    	<li>{{ptopic}}</li>
+  	{% endfor %}
+      </td>      
+      <td >
+	{% for service in advertised_services %}
+    	<li>{{service}}</li>
+  	{% endfor %}
+      </td>
+      <td >
+	{% for action in advertised_actions %}
+    	<li>{{action}}</li>
+  	{% endfor %}
+      </td>			
+  </tr>
+</table>
+</div>
+
+<HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="80%" color=#987cb9 SIZE=3>
+
+<h2>Functional description</h2>
+<div>
+	<p>{{comments}}</p>
+</div>
+
+<HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="80%" color=#987cb9 SIZE=3>
+
+
+<div>
+	<button onclick="javascript:window.location.href='/download/{{ imagename }}';">Download</button> 
+	<button onclick="javascript:window.location.href='/delete/{{ imagename }}';">Delete Image</button> 
+</div>
+
+
+</html>
+{% endblock %}
