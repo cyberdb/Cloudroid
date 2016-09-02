@@ -63,18 +63,19 @@ def downloadFileBuild(downloadFileName):
     try:
         if os.path.exists(client_path):
             shutil.rmtree(client_path)
-        if not os.path.exists(download_path):
+        if os.path.exists(download_path):
+            shutil.rmtree(download_path)
             os.mkdir(download_path)
         unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
         os.system(unzip_cmd)
         client_url = url()
         client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
                                         advertised_services = advertised_services, url = client_url, image_id = image_name)
-        with open("./client/cloudproxy/share/cloudproxy/launch/client.launch", "wb") as fh:
+        with open("./client/cloudproxy/launch/client.launch", "wb") as fh:
             fh.write(client_launch)
-        zip_cmd = 'zip -r ' + image_name +".zip " + "./client"
+        zip_cmd = 'zip -r ./client/' + image_name +".zip " + "./client/cloudproxy/"
         os.system(zip_cmd)
-        os.system("mv " + image_name + ".zip app/download/")
+        os.system("mv ./client/" + image_name + ".zip ./app/download/")
         
     except Exception, e:
         error_string = 'Unable to generating client proxy for image {}. \nReason: {}'.format(image_name, str(e))
