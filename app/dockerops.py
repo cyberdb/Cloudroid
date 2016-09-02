@@ -65,7 +65,7 @@ def downloadFileBuild(downloadFileName):
             shutil.rmtree(client_path)
         if os.path.exists(download_path):
             shutil.rmtree(download_path)
-            os.mkdir(download_path)
+        os.mkdir(download_path)
         unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
         os.system(unzip_cmd)
         client_url = url()

@@ -46,6 +46,8 @@ def reset_container_db():#Initialize the db with the information of running cont
         db.session.delete(j)
         db.session.commit() 
     containerList = listContainner()
+    if containerList == None:
+        return 'Container db has been initialized!'
     for i in xrange(len(containerList)):
         removeContainer(containerList[i]['Id'])
     return 'Container db has been initialized!'
