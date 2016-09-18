@@ -339,7 +339,7 @@ def deleteImage(image_name):
     
     try:
         docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.remove_image(image = image_name)
+        docker_client.remove_image(image = image_name, force = True)
         image = models.Image.query.filter_by(imagename = image_name).first()
         db.session.delete(image)
         db.session.commit() 
