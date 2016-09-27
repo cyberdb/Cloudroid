@@ -7,7 +7,7 @@ The service access is purely based on a cloud service paradigm, which means that
 
 By adopting the docker container technology in the back-end, a ROS package which is orignally designed for a single robot can serve multiple robots simultaneously by dynamically instantiation of the servant in the cloud. And by specifying the resource demand of the ROS package (e.g., mem, CPU, etc.), the quaility of a service can be assured by the internal mechanisms of micROS-cloud.
 
-Please contact us through siteen@outlook.com or bding@msn.com. Any feedback would be greatly appreciated.
+Please contact us through wennshm@163.com, siteen@outlook.com or bding@msn.com. Any feedback would be greatly appreciated.
 
 ## Release notes
 
