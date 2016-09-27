@@ -1,0 +1,14 @@
+{
+   "subscribed_topics": ["/tf","/scan"],
+   "published_topics": ["/map"],
+   "advertised_services": ["dynamic_map"],
+   "advertised_actions": [],
+   
+   "start_cmds": ["rosrun gmapping slam_gmapping"],
+
+   "mem_limit": "1073741824",
+   "memswap_limit" : "1073741824",
+   "cpushares":"100",
+   "cpusetcpus":"0,1"
+}
+

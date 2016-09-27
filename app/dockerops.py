@@ -184,7 +184,8 @@ def getContainerPort(image_name, cmd):
       
         '''Start the newly created container'''     
         container_id = container.get('Id')
-        docker_client.start(container=container_id, port_bindings={9090: None})     
+        #docker_client.start(container=container_id, port_bindings={9090: None})
+        docker_client.start(container=container_id)     
         
         '''Inspect state to ensure the container has been started'''
         response = docker_client.inspect_container(container_id)
