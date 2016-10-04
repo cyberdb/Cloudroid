@@ -1,24 +1,24 @@
 # coding:utf-8
-#!/usr/bin/python
+# !/usr/bin/python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2016, micROS Team
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of micROS-drt nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,41 +31,32 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import threading  
-from dockerops import stopContainer
-from dockerops import removeContainer
-from dockerops import listContainner
+import threading
+from dockerops import removeServices
 import time
-from app import db, models 
-from models import Container
+from app import db, models
+#from models import Services
 
-def reset_container_db():#Initialize the db with the information of running containers
 
-    cons = Container.query.all()
-    for j in cons:
-        db.session.delete(j)
-        db.session.commit() 
-    containerList = listContainner()
-    if containerList == None:
-        return 'Container db has been initialized!'
-    for i in xrange(len(containerList)):
-        removeContainer(containerList[i]['Id'])
-    return 'Container db has been initialized!'
 
-mutex=threading.Lock() 
-class abandoned_container(threading.Thread): #Find the abandoned container to remove
-    def __init__(self):  
-        threading.Thread.__init__(self)  
-        
+
+
+mutex = threading.Lock()
+
+
+class abandoned_service(threading.Thread):  # Find the abandoned service to remove
+    def __init__(self):
+        threading.Thread.__init__(self)
+
     def run(self):
         mutex.acquire()
         while True:
-            
-            Containers = models.Container.query.all() 
-            for c in Containers:
-                if time.time()-float(c.createdtime) > 600:
-                    removeContainer(c.containerid)
-                    print "Stopped %s"%c.containerid
+
+            Services = models.Service.query.all()
+            for c in Services:
+                if time.time() - float(c.createdtime) > 600:
+                    removeServices(c.serviceid)
+                    print "Stopped %s" % c.serviceid
             time.sleep(10)
-            
+
         mutex.release()

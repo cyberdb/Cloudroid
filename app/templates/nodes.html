@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set active_page = "nodes" %} 
+{% block content %}
+<html lang="zh-cn">
+
+
+
+<div>
+<h2>All of the nodes</h2>
+
+<div>
+	<button onclick="javascript:window.location.href='/addnode';">Add Node</button>  
+</div>
+
+
+<HR style="FILTER: alpha(opacity=100,finishopacity=0,style=3)" width="80%" color=#987cb9 SIZE=10>
+<HR style="border:3 double #987cb9" width="80%" color=#987cb9 SIZE=3>
+
+
+<table class="dataintable"
+border = "1"
+bdcolor = "gray">
+<tr>
+<th style="width:50%;">Node Name</th>
+<th style="width:50%;">Node IP</th>
+</tr>
+  {% for node in nodetable %}
+    	<tr>
+	<td>{{node.nodename}}</td>
+	<td>{{node.nodeip}}</td>
+	<td><button onclick="javascript:window.location.href='/delnode/{{ node.nodename }}';">Delete</button></td>
+	</tr>
+  {% endfor %}
+
+</table>
+
+
+
+</div>
+</html>
+{% endblock %}

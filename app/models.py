@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from werkzeug import generate_password_hash, check_password_hash
+from werkzeug import *
 from app import db
 
 class User(db.Model):
@@ -76,19 +77,28 @@ class Image(db.Model):
     subscribed_topics = db.Column(db.String(100))
     advertised_services = db.Column(db.String(100))
     advertised_actions = db.Column(db.String(100))
+
     
-class Container(db.Model):
-    __tablename__ = 'containers'
+class Service(db.Model):
+    __tablename__ = 'services'
     uid = db.Column(db.Integer, primary_key = True)
-    containerid = db.Column(db.String(100))
+    serviceid = db.Column(db.String(100))
     createdtime = db.Column(db.String(100))
     imagename =  db.Column(db.String(100))
     uploadname =  db.Column(db.String(100))
     username =  db.Column(db.String(100))
     firstcreatetime = db.Column(db.DateTime())
-    containerstopped = db.Column(db.Boolean)
+
+
+class Node(db.Model):
+    __tablename__ = 'nodes'
+    uid = db.Column(db.Integer, primary_key=True)
+    nodename = db.Column(db.String(100))
+    nodeip = db.Column(db.String(100))
+
     
 class ServerIP(db.Model):
-    __tablename__ = 'ServerIP'
+    __tablename__ = 'serverip'
     uid = db.Column(db.Integer, primary_key = True)
     serverip = db.Column(db.String(100))
+

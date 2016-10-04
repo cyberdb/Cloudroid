@@ -29,16 +29,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from flask import Flask, request, redirect, url_for
+#from flask import Flask, request, redirect, url_for
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from flask import jsonify,send_from_directory,abort
 from app import app, db, lm
-from app.models import User
+#from app.models import User
 from app.dockerops import *
-from app.supervise_containers import *
+from app.supervise import *
 import os, sys
-import socket
+#import socket
 from app.commonset import *
 
 reload(sys)
@@ -109,6 +109,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
@@ -119,8 +120,8 @@ def upload():
         action_error_msg = None
         param_do = form.do_action.data
         
-        if (param_do == 'upload'):
-            action_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
+        #if (param_do == 'upload'):
+        action_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
         action_list = action_msg.split(";")
         if len(action_list) != 2:
             action_error_msg = action_list[0]
@@ -135,6 +136,7 @@ def upload():
             return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)   
          
     return render_template('upload.html',form=form, action_error_msg = None, succeed = False)
+
 
 @app.route('/setting', methods=['GET', 'POST'])
 def setting():
@@ -152,7 +154,8 @@ def setting():
         db.session.commit()
         return render_template('setting.html',form=form, succeed = True)
     return render_template('setting.html',form=form)
-    
+
+
 @app.route('/download/<string:proxy_name>', methods=['GET'])
 def download(proxy_name):
     from app.forms import UploadForm
@@ -170,6 +173,83 @@ def download(proxy_name):
         return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = False)
 
 
+@app.route('/nodes', methods=['GET'])
+def nodes():
+    from app import db, models
+    nodes = models.Node.query.all()
+    result = []
+    part_line = {'nodename':'default','nodeip':'default'}
+    for i in nodes:
+        part_line['nodename'] = i.nodename
+        part_line['nodeip'] = i.nodeip
+        result.append(part_line)
+        part_line = {}
+    print result
+    return render_template('nodes.html', nodetable=result)
+
+
+@app.route('/addnode', methods=['GET', 'POST'])
+def addnode():
+    from app import db, models
+    from app.forms import NodeForm
+    form = NodeForm()
+    nodes = models.Node.query.all()
+    result = []
+    part_line = {'nodename':'default','nodeip':'default'}
+    if form.validate_on_submit():
+        exist_node = 0
+        for i in nodes:
+            if form.nodename.data == i.nodename:
+                db.session.delete(i)
+                db.session.commit()
+                u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
+                db.session.add(u)
+                db.session.commit()
+                part_line['nodename'] = form.nodename.data
+                part_line['nodeip'] = form.nodeip.data
+                print form.nodeip.data
+                print part_line['nodeip']
+                result.append(part_line)
+                part_line = {}
+                exist_node = 1
+                print result
+            else:
+                part_line['nodename'] = i.nodename
+                part_line['nodeip'] = i.nodeip
+                result.append(part_line)
+                part_line = {}
+        if exist_node == 0:
+            u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
+            db.session.add(u)
+            db.session.commit()
+            part_line['nodename'] = form.nodename.data
+            part_line['nodeip'] = form.nodeip.data
+            result.append(part_line)
+            return render_template('nodes.html', nodetable=result)
+        return render_template('nodes.html', nodetable=result)
+    else:
+        return render_template('addnode.html', form = form)
+
+
+@app.route('/delnode/<string:nodename>', methods=['GET'])
+def delnode(nodename):
+    from app import db, models
+    nodes = models.Node.query.all()
+    result = []
+    part_line = {'nodename': 'default', 'nodeip': 'default'}
+    for i in nodes:
+        if i.nodename == nodename:
+            db.session.delete(i)
+            db.session.commit()
+            continue
+        part_line['nodename'] = i.nodename
+        part_line['nodeip'] = i.nodeip
+        result.append(part_line)
+        part_line = {}
+    return render_template('nodes.html', nodetable=result)
+
+
+
 @app.route('/images', methods=['GET'])
 def images():
     from app import db, models         
@@ -184,8 +264,8 @@ def images():
         result.append(part_line)
         part_line = {}
     return render_template('images.html',imagetables = result)
-
   
+
 @app.route('/idetailed/<string:image_name>', methods=['GET'])
 def idetailed(image_name):
     from app import db, models 
@@ -204,60 +284,43 @@ def delete(image_name):
     return render_template('delete.html', imagename = image_name, error_msg = error_msg)
     
 
-@app.route('/containers', methods=['GET'])
-def containers():
-    containeri = containerinfo()
-    return render_template('containers.html', containertables = containeri)
+@app.route('/services', methods=['GET'])
+def services():
+    servicei = serviceinfo()
+    return render_template('service.html', servicetables = servicei)
 
-@app.route('/remove/<string:containerid>', methods=['GET'])
-def remove(containerid):
-    removeContainer(containerid)
-    containeri = containerinfo()
-    return render_template('containers.html', containertables = containeri)
 
-@app.route('/Stop/<string:containerid>', methods=['GET'])
-def stop(containerid):
-    stopContainer(containerid)
-    containeri = containerinfo()
-    return render_template('containers.html', containertables = containeri)
+@app.route('/remove/<string:serviceid>', methods=['GET'])
+def remove(serviceid):
+    removeServices(serviceid)
+    servicei = serviceinfo()
+    return render_template('service.html', servicetables = servicei)
 
-@app.route('/Start/<string:containerid>', methods=['GET'])
-def start(containerid):
-    startContainer(containerid)
-    containeri = containerinfo()
-    return render_template('containers.html', containertables = containeri)
 
 @app.route('/getinstance/<string:image_name>', methods=['GET'])
 def get_instance(image_name):
-  
-
-    serverip = models.ServerIP.query.first()
-    if serverip.serverip == None:
-        ipaddr = ipaddr()
-    else:
-        ipaddr = serverip.serverip
-    return 'ws://' + ipaddr + ':' + str(getContainerPort(image_name, ''))
+    return 'ws://' + str(getServicePort(image_name))
     
       
-@app.route('/ping/<string:container_id>', methods=['GET'])
-def ping(container_id):
+@app.route('/ping/<string:service_id>', methods=['GET'])
+def ping(service_id):
      
     from app import db, models
-    from models import Container
-    finding = Container.query.filter_by(containerid=container_id).first()
+    from models import Service
+    finding = Service.query.filter_by(serviceid=service_id).first()
     if finding is not None:
         image_name = finding.imagename
         uploadn = finding.uploadname
         usern = finding.username
-        containerstopped = finding.containerstopped
         firstcreatetime = finding.firstcreatetime
-        u = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = containerstopped)
+        u = Service(serviceid = service_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime)
         db.session.add(u) 
         db.session.commit() 
         db.session.delete(finding)
         db.session.commit()
     else:
-        return "The container has been removed!" 
+        return "The service "+service_id+" has been removed!"
     
-    return "There are existing containers."
+    return "There are existing service:"+service_id
         
+
