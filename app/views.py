@@ -323,4 +323,3 @@ def ping(service_id):
     
     return "There are existing service:"+service_id
         
-

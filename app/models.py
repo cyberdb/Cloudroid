@@ -101,4 +101,3 @@ class ServerIP(db.Model):
     __tablename__ = 'serverip'
     uid = db.Column(db.Integer, primary_key = True)
     serverip = db.Column(db.String(100))
-

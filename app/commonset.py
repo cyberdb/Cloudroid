@@ -48,8 +48,8 @@ def ipaddr():
 
 
 def url():
-    serverip = models.ServerIP.query.all()
-    if len(serverip) == 0:
+    serverip = models.ServerIP.query.first()
+    if serverip.serverip == None:
         get_url = default_url
     else:
         get_url = serverip.serverip+':'+port

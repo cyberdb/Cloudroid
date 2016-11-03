@@ -68,4 +68,3 @@ container_dropping_thread.start()
 
 
 from app import views, models
-
