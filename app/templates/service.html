@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set active_page = "service" %} 
+{% block content %}
+<html lang="zh-cn">
+
+
+
+<div>
+<h2>All of the services</h2>
+
+<table class="dataintable"
+border = "1"
+bdcolor = "gray">
+<tr>
+<th style="width:20%;">Service ID</th>
+<th style="width:20%;">Image Name</th>
+<th style="width:20%;">File Name</th>
+<th style="width:20%;">The User</th>
+<th style="width:20%;">Create Time</th>
+</tr>
+  {% for service in servicetables %}
+    	<tr>
+	<td>{{service.serviceid}}</td>
+	<td>{{service.imagename}}</td>
+	<td>{{service.filename}}</td>
+	<td>{{service.user}}</td>
+	<td>{{service.createtime}}</td>
+	<td><button onclick="javascript:window.location.href='/remove/{{ service.serviceid }}';">Remove</button></td>
+	</tr>
+  {% endfor %}
+
+</table>
+</div>
+</html>
+{% endblock %}

@@ -31,7 +31,7 @@
 
 import zipfile, os, shutil, json, time, logging
 from docker import Client
-from werkzeug import secure_filename
+import docker
 from app import db, models 
 from app.models import *
 from app.commonset import *
@@ -42,7 +42,10 @@ from flask.globals import session
 from Tkinter import image_names
 
 
+registry = '192.168.1.105:5000'
+
 current_milli_time = lambda: int(round(time.time() * 1000))
+
 
 
 class StreamLineBuildGenerator(object):
@@ -83,7 +86,7 @@ def downloadFileBuild(downloadFileName):
         return error_string
     return None
             
-    
+
         
 def uploadFile(ros_file, manifest_file, comments):  
     upload_path='./upload'
@@ -143,15 +146,29 @@ def uploadFile(ros_file, manifest_file, comments):
     '''Building the docker image''' 
     logging.info('Generating docker image with tag %s', image_name)
     try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        generator = docker_client.build(path=".", rm = True, tag = image_name, container_limits = container_limits)
+        docker_client = docker.Client(base_url = 'unix://var/run/docker.sock')
+        registry_imagename = registry +'/'+ image_name
+        generator = docker_client.build(path=".", rm = True, tag = registry_imagename, container_limits = container_limits)
         
         '''Check any error by inspecting the output of build()''' 
         for line in generator:
             try:
                 stream_line = StreamLineBuildGenerator(line)
                 if hasattr(stream_line, "error"):
-                    error_string = 'Unable to generating docker image with name {}. \nReason: {}'.format(image_name, stream_line.error)
+                    error_string = 'Unable to generating docker image with name {}. \nReason: {}'.format(registry_imagename, stream_line.error)
+                    logging.error(error_string)
+                    return error_string
+            except ValueError:
+                ''' If we are not able to deserialize the received line as JSON object, just ignore it'''
+                continue
+        '''Push the images to private repository'''
+        response_push = docker_client.push(registry_imagename, stream = True)
+        '''Check any error by inspecting the output of push()'''
+        for line in response_push:
+            try:
+                json_line = json.loads(line)
+                if 'error' in json_line.keys():
+                    error_string = 'Unable to push docker image with name {}. \nReason: {}'.format(registry_imagename, json_line['error'])
                     logging.error(error_string)
                     return error_string
             except ValueError:
@@ -173,173 +190,102 @@ def uploadFile(ros_file, manifest_file, comments):
     
     return "None;"+image_name
 
-def getContainerPort(image_name, cmd):
-    logging.info('Starting a new container with image %s', image_name)
+
+def getServicePort(image_name):
+    logging.info('Starting a new services with image %s', image_name)
     
     try:
-        '''Create container with image_name, Rosbridge port 9090 is mapped into a random port on the host machine'''
-        docker_client = Client(base_url=DOCKER_PORT)
-        config=docker_client.create_host_config(port_bindings={9090: None})
-        container = docker_client.create_container(image=image_name, ports = [9090], host_config = config)
-      
-        '''Start the newly created container'''     
-        container_id = container.get('Id')
-        docker_client.start(container=container_id, port_bindings={9090: None})     
-        
-        '''Inspect state to ensure the container has been started'''
-        response = docker_client.inspect_container(container_id)
-        if (response == None or response.get('State') == None or not (response.get('State')).get('Running')):
-            logging.error('Container %s status inspect failure. Start failed', container_id)
+        client = docker.Client(base_url=DOCKER_PORT)
+        image = registry+'/'+image_name
+        com_cre_ser = 'sudo docker service create --replicas 1  --publish ' + ':9090 ' + image
+        service_ps = os.popen(com_cre_ser).read().split('\n')
+        service_id = service_ps[0]
+        time.sleep(10)
+        ser_ins = client.inspect_service(service_id)
+        port = ser_ins['Endpoint']['Ports'][0]['PublishedPort']
+        print port
+        ser_ps_com = "sudo docker service ps " + service_id
+        service_ps = os.popen(ser_ps_com).read().split('\n')
+        if service_ps[1].split()[4] == 'Running':
+            node = service_ps[1].split()[3]
+        else:
+            logging.error('Unable to create the service with image %s. \nReason: %s', service_ps[1].split()[6])
             return
-               
+        print node
+        get_node = models.Node.query.filter_by(nodename = node).first()
+        ip = get_node.nodeip
+        '''
+        if (node == 'micros-PowerEdge-R430'):
+            ip = '192.168.1.121'
+        elif (node == 'huben-PowerEdge-R430'):
+            ip = '192.168.1.101'
+        '''
     except Exception, e:
-        logging.error('Unable to start the container with image %s. \nReason: %s', image_name, str(e))
+        logging.error('Unable to create the service with image %s. \nReason: %s', image_name, str(e))
         return
-    
-    '''Get port number on the host machine'''   
-    logging.info('Finished starting a new container with id %s', container_id)
-    response = docker_client.port(container_id, 9090)
-    host_port = None
-    if (response != None):
-        host_port = response[0].get('HostPort')
-
-    logging.info('New container is started. Websocket port on the host machine is %s.', host_port)
-    logging.info('Store the container infomation to the db')
+    logging.info('Store the service infomation to the db')
     try:
         imageinfo = models.Image.query.filter_by(imagename = image_name).first()
         uploadn = imageinfo.uploadname
         usern = imageinfo.uploaduser
-        container_record = Container(containerid = container_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now(), containerstopped = False)
-        db.session.add(container_record)
+        service_record = Service(serviceid = service_id, createdtime = str(time.time()), imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = datetime.now())
+        db.session.add(service_record)
         db.session.commit()
     except Exception, e:
-        logging.error('Failed to store the container info to the db. \nReason: %s', str(e))
+        logging.error('Failed to store the service info to the db. \nReason: %s', str(e))
         return
-    return host_port+" "+container_id
 
-def containerinfo():
-    logging.info('The query of containers info list')
+    return ip+':'+str(port)+" "+service_id
+
+
+def serviceinfo():
+    logging.info('The query of services info list')
     
     try:  
-        containers = models.Container.query.all()
+        services = models.Service.query.all()
         result = []
-        part_line = {'containerid':'default','imagename':'default','filename':'default','user':'default','createtime':'default','containerstopped':'Stop'}
-        for i in containers:
-            part_line['containerid'] = i.containerid[0:12]
+        part_line = {'serviceid':'default','imagename':'default','filename':'default','user':'default','createtime':'default'}
+        for i in services:
+            part_line['serviceid'] = i.serviceid
             part_line['imagename'] = i.imagename
             part_line['filename'] = i.uploadname
             part_line['user'] = i.username
-            part_line['createtime'] = i.firstcreatetime        
-            if i.containerstopped:
-                part_line['containerstopped'] = 'Start'
-            else:
-                part_line['containerstopped'] = 'Stop'
+            part_line['createtime'] = i.firstcreatetime
             result.append(part_line)
             part_line = {}
         
         return result
             
     except Exception, e:
-        logging.error('Unable to list the containers info. \nReason: %s', str(e))
+        logging.error('Unable to list the services info. \nReason: %s', str(e))
         return
     
 
-def listContainner():
-    logging.info('The query of existing containers')
+
+def removeServices(serviceid):
+    logging.info('Remove the service %s', serviceid)
     
     try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        return docker_client.containers(quiet=True, all=True)#Only running containers are shown by default
-    
-    except Exception, e:
-        logging.error('Unable to list the containers. \nReason: %s', str(e))
-        return
-
-def stopContainer(container_id):
-    logging.info('Stopping the container %s', container_id)
-    
-    try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.stop(container = container_id)
-        stop_con = models.Container.query.all()
-        for i in stop_con:
-            if i.containerid[0:12] == container_id:
-                container_id = i.containerid
-                createdtime = i.createdtime
-                image_name = i.imagename
-                uploadn = i.uploadname
-                usern = i.username
-                firstcreatetime = i.firstcreatetime
-                container_record = Container(containerid = container_id, createdtime = createdtime, imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = True)
-                db.session.add(container_record)
-                db.session.commit()
-                db.session.delete(i)
-                db.session.commit()
-                break
-
-               
-    except Exception, e:
-        logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
-        return
-     
-def startContainer(container_id):
-    logging.info('Starting the container %s', container_id)
-    
-    try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.start(container = container_id)
-        start_con = models.Container.query.all()
-        for i in start_con:
-            if i.containerid[0:12] == container_id:
-                container_id = i.containerid
-                createdtime = i.createdtime
-                image_name = i.imagename
-                uploadn = i.uploadname
-                usern = i.username
-                firstcreatetime = i.firstcreatetime
-                container_record = Container(containerid = container_id, createdtime = createdtime, imagename = image_name, uploadname = uploadn, username = usern, firstcreatetime = firstcreatetime, containerstopped = False)
-                db.session.add(container_record)
-                db.session.commit()
-                db.session.delete(i)
-                db.session.commit()
-                break
-
-               
-    except Exception, e:
-        logging.error('Unable to stop the container %s. \nReason: %s', container_id, str(e))
-        return         
-     
-
-def removeContainer(container_id):
-    logging.info('Remove the container %s', container_id)
-    
-    try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.remove_container(container = container_id, force = True)
-        remove_con = models.Container.query.all()
+        docker_client = docker.Client(base_url=DOCKER_PORT)
+        docker_client.remove_service(serviceid)
+        remove_con = models.Service.query.all()
         for i in remove_con:
-            if (i.containerid[0:12] == container_id)or(i.containerid == container_id):
+            if (i.serviceid == serviceid):
                 db.session.delete(i)
                 db.session.commit()
                 break
                
     except Exception, e:
-        if str(e).find('No such container:'):
-            remove_con = models.Container.query.all()
-            for i in remove_con:
-                if (i.containerid[0:12] == container_id)or(i.containerid == container_id):
-                    db.session.delete(i)
-                    db.session.commit()
-                    break
-        logging.error('Unable to remove the container %s. \nReason: %s', container_id, str(e))
+        logging.error('Unable to remove the service %s. \nReason: %s', serviceid, str(e))
         return
+
 
 def deleteImage(image_name):
     logging.info('Delete the image %s', image_name)
     
     try:
-        docker_client = Client(base_url=DOCKER_PORT)
-        docker_client.remove_image(image = image_name, force = True)
+        #docker_client = docker.Client(base_url=DOCKER_PORT)
+        #docker_client.remove_image(image = image_name, force = True)
         image = models.Image.query.filter_by(imagename = image_name).first()
         db.session.delete(image)
         db.session.commit() 
@@ -358,7 +304,8 @@ def deleteImage(image_name):
         return error_string
     
     return None   
-    
+
+
 def ListToString(lista):
     if lista.__len__() == 0:
         stringa = "None"
@@ -370,6 +317,7 @@ def ListToString(lista):
                 lista[i] = str(lista[i]+"#")
         stringa = stringa.join(lista)
         return stringa
+
 
 def StringToList(stringa):
     if stringa == "None":

@@ -57,14 +57,14 @@ lm = LoginManager()
 lm.init_app(app)
 lm.login_view = 'login'
 
-from supervise_containers import abandoned_container
-from supervise_containers import reset_container_db
-initCon = reset_container_db()
-#print initCon
+from supervise import abandoned_service
+
       
       
-container_dropping_thread = abandoned_container() 
-container_dropping_thread.start() 
+container_dropping_thread = abandoned_service()
+container_dropping_thread.start()
+
+
 
 
 from app import views, models

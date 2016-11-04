@@ -56,7 +56,14 @@ class UploadForm(Form):
     ros_file = FileField('Upload ROS File Name', validators=[FileRequired('The ROS package filename is required'), FileAllowed(['zip'], 'Zipped ROS installable file only!')])
     manifest_file = FileField('Upload Manifiest File Name', validators=[FileRequired('The mainifest filename is required'), FileAllowed(['json'], 'Json manifest file only!')])
     comments = StringField('Optional Comments')
-    
+
+class NodeForm(Form):
+    nodename = StringField('Nodename', validators=[DataRequired("Please enter the Nodename.")])
+    nodeip = StringField('Nodeip', validators=[DataRequired("Please enter the Nodeip.")])
+
+
 class SetForm(Form):
     ip = StringField('IP', validators=[DataRequired("Please enter the IP of server.")])
+
+
         

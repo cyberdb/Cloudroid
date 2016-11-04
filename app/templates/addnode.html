@@ -1,7 +1,14 @@
 {% extends "base.html" %}
-{% set active_page = "setting" %}
+{% set active_page = "addnode" %} 
 {% block content %}
-<form action="{{ url_for('setting') }}" method="post" enctype="multipart/form-data">
+<html lang="zh-cn">
+
+
+
+<div>
+<h2>Add Node</h2>
+
+<form action="{{ url_for('addnode') }}" method="post" enctype="multipart/form-data">
   {{ form.hidden_tag() }}
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -9,7 +16,15 @@
     <div class="panel-body">
       <table>
         <tr>
-          <td><b>Server IP(IP V4)</b> {{ form.ip(size=31, class="form-control") }}</td>
+          <td><b>Node Name</b> {{ form.nodename(size=31, class="form-control") }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <td><b>Node IP</b> {{ form.nodeip(size=31, class="form-control") }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>
@@ -26,11 +41,7 @@
   </div>
 </form>
 
-<div id="hiding">
-  {% if succeed %}
-    <div class="alert alert-success" role="alert">
-      <b>OK:</b> Succeeded to reset the server ip </b>.
-    </div>
-  {% endif %}
+
 </div>
+</html>
 {% endblock %}

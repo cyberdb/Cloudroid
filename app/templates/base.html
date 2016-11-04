@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <link rel="icon" href="{{ url_for('static',filename='img/favicon.ico') }}">
-    <title>RobotCloud</title>
+    <title>Cloudroid</title>
 
     <!-- Bootstrap core CSS -->
     <link href="{{ url_for('static',filename='css/bootstrap.min.css') }}" rel="stylesheet">
@@ -38,7 +38,7 @@
             <span class="icon-bar"></span>
           </button>
 	  <a class="navbar-brand" href="{{ url_for('index') }}"><img src="{{ url_for('static',filename='img/title.jpg') }}"  alt="micROS" height="35" width="35" /></a>
-          <a class="navbar-brand" href="{{ url_for('index') }}">micROS-RobotCloud</a>
+          <a class="navbar-brand" href="{{ url_for('index') }}">Cloudroid</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -67,7 +67,8 @@
               {% set navigation_bar = [
                 ('/upload', 'upload', 'Upload New ROS Package'),
                 ('/images', 'images', 'Manage Existing Images'),
-		('/containers','containers','Manage Existing Containers'),
+		('/services','services','Manage Existing Services'),
+		('/nodes','nodes','Manage Nodes'),
 		('/setting','setting','Setting'),
               ] -%}
               {% set active_page = active_page|default('index') -%}
