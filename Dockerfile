@@ -8,12 +8,7 @@ RUN chmod +x /rosdep.py
 RUN chmod +x /catkin_install/devel/_setup_util.py
 RUN chmod +x /buildimages.sh
 
-
-RUN apt-get update
-RUN apt-key update
-
 RUN ./buildimages.sh
-
 
 ENTRYPOINT ["/ros_entry.sh"]
 
