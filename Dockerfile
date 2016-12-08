@@ -1,8 +1,19 @@
 FROM ros:my
 COPY ./temp/install /catkin_install
 COPY ./temp/ros_entry.sh /
+COPY ./rosdep.py /
+COPY ./buildimages.sh /
 RUN chmod +x /ros_entry.sh
-RUN chmod +x /catkin_install/_setup_util.py
+RUN chmod +x /rosdep.py
+RUN chmod +x /catkin_install/devel/_setup_util.py
+RUN chmod +x /buildimages.sh
+
+
+RUN apt-get update
+RUN apt-key update
+
+RUN ./buildimages.sh
+
 
 ENTRYPOINT ["/ros_entry.sh"]
 

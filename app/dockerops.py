@@ -42,7 +42,7 @@ from flask.globals import session
 from Tkinter import image_names
 
 
-registry = '192.168.1.105:5000'
+registry = '127.0.0.1:5000'
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
