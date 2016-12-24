@@ -4,10 +4,11 @@ import roslib, rospy
 import actionlib_msgs.msg
 import uuid
 from importlib import import_module
-from rosservice import get_service_type
+from rosservice import get_service_type, get_service_args, call_service
 from rostopic import get_topic_type
 import urllib2
 from rospkg.common import ResourceNotFound
+
 
 def get_remote_topic_type(topic_name, url):
     while True:
@@ -65,7 +66,7 @@ def get_remote_service_info(service_name, url):
 
         if x['result']:
             return x['values']['type'] 
-        else 
+        else:
             return ""
     except Exception, e:
         rospy.logerr('Get the type of service %s from Rosbridge server %s failed. Reason: %s', service_name, url, str(e))
@@ -107,7 +108,7 @@ def wait_service_ready(service_name, url):
             rospy.loginfo("Failed to get the local type of service %s. Retrying...", service_name)
         time.sleep(1)
     
-    if remote_topic_type != local_topic_type:
+    if remote_service_type != local_service_type:
         return None, None
 
     local_service_args = None
@@ -116,8 +117,10 @@ def wait_service_ready(service_name, url):
         if (local_service_args == None):
             rospy.loginfo("Failed to get the arguments list of service %s. Retrying...", service_name)
         time.sleep(1)
+    
+    print "wait_service_ready\n"
 
-    return local_topic_type, local_service_args
+    return local_service_type, local_service_args
     
 class SubscribedTopicProxy(threading.Thread):
     def __init__(self, topic_name, url, queue_size, test = False):
@@ -207,8 +210,8 @@ class CallServiceProxy(threading.Thread):
         self.event_queue = {}
     
     def run(self):
-        self.service_type, self.service_args = wait_topic_ready(self.service_name, self.url)
-        if not self.topic_type:
+        self.service_type, self.service_args = wait_service_ready(self.service_name, self.url)
+        if not self.service_type:
             rospy.logerr('Type of service %s are not equal in the remote and local sides', self.service_type)
             return
         
@@ -217,11 +220,12 @@ class CallServiceProxy(threading.Thread):
             roslib.load_manifest(service_type_module)
             msg_module = import_module(service_type_module + '.srv')
             self.srvtype = getattr(msg_module, service_type_name)
-                
+            
+            print 'begin to call'
             if self.test:
-                self.caller = rospy.Service(self.service_name + '_rb', self.srvtype, self.callback, self.queue_size)
+                self.caller = rospy.Service(self.service_name + '_rb', self.srvtype, self.callback)#, self.queue_size)
             else: 
-                self.caller = rospy.Service(self.service_name, self.srvtype, self.callback, self.queue_size)
+                self.caller = rospy.Service(self.service_name, self.srvtype, self.callback)#, self.queue_size)
                                       
             self.ws = websocket.WebSocketApp(self.url, on_message = self.on_message, on_error = self.on_error, on_close = self.on_close, on_open = self.on_open)
             rospy.loginfo('Create connection to Rosbridge server %s for calling service %s successfully', self.url, self.service_name)
@@ -247,20 +251,29 @@ class CallServiceProxy(threading.Thread):
                 'event': sleepEvent
             }
 
+
+	'''
         if type(self.service_args) == str:
-            args_list = [ req.get(self.service_args) ]
+            args_list = req.get(self.service_args) #[ req.get(self.service_args) ]  
         else:
             args_list = [ req.get(it) for it in self.service_args ]
+
+	'''
+
+        if type(self.service_args) == str:
+            args_lists = req.get(self.service_args)
+        else:
+            args_lists = [ req.get(it) for it in self.service_args ]
 
         try:
             self.ws.send(json.dumps({
                 'op': 'call_service',
                 'id': call_id,
-                'service': self.service_name,
-                'args': args_lists
+                'service': self.service_name
+                #'args': args_lists
             }))
         except Exception, e:
-            rospy.logerr('Failed to publish message on topic %s with %s. Reason: %s', self.topic_name, data, str(e))
+            rospy.logerr('Failed to publish message on topic %s with %s. Reason: %s', self.service_name, self.service_args, str(e))
         
 
         sleepEvent.wait()
@@ -269,6 +282,8 @@ class CallServiceProxy(threading.Thread):
         # need lock to protect
             ret = self.event_queue['call_id'].get('result')
             self.event_queue.pop('call_id')
+
+   	rospy.loginfo("call back2\n")
 
         return ret
 
@@ -291,7 +306,7 @@ class CallServiceProxy(threading.Thread):
                 self.event_queue[call_id]['event'].set()
 
         except Exception, e:
-            rospy.logerr('Failed to publish message on topic %s. Reason: %s', self.topic_name, str(e))
+            rospy.logerr('Failed to publish message on topic %s. Reason: %s', self.service_name, str(e))
     
     def on_error(self, ws, error):
         rospy.logerr('Websocket connection error on service %s', self.service_name)
@@ -416,7 +431,6 @@ class keep_container_live(threading.Thread): #Connect to server every 20 seconds
                 rospy.logerr('Failed to connect to PING. Reason: %s', str(e))
             	  
 
-
 def start_proxies():  
     parser = argparse.ArgumentParser()
     
@@ -465,7 +479,7 @@ def start_proxies():
         proxy.start()
 
     rospy.spin()
-    
+
     
 
 
