@@ -261,9 +261,9 @@ class CallServiceProxy(threading.Thread):
 	'''
 
         if type(self.service_args) == str:
-            args_lists = req.get(self.service_args)
+            args_lists = getattr(req, self.service_args)
         else:
-            args_lists = [ req.get(it) for it in self.service_args ]
+            args_lists = [ getattr(req, it) for it in self.service_args ]
 
         try:
             self.ws.send(json.dumps({
