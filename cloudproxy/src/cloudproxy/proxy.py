@@ -253,23 +253,18 @@ class CallServiceProxy(threading.Thread):
                 'event': sleepEvent
             }
 
-
-    '''
-        if type(self.service_args) == str:
-            args_list = req.get(self.service_args) #[ req.get(self.service_args) ]  
-        else:
-            args_list = [ req.get(it) for it in self.service_args ]
-
-    '''
-
-        args_lists = [ getattr(req, it) for it in self.service_args ]
+        #args_lists = [ getattr(req, it) for it in self.service_args ]
+        args_lists = []
+	for it in self.service_args.split(' '):
+	    if it != '':
+		args_lists.append(getattr(req, it))
 
         try:
             self.ws.send(json.dumps({
                 'op': 'call_service',
                 'id': call_id,
                 'service': self.service_name
-                #'args': args_lists
+                'args': args_lists
             }))
         except Exception, e:
             rospy.logerr('Failed to publish message on topic %s with %s. Reason: %s', self.service_name, self.service_args, str(e))
@@ -298,11 +293,23 @@ class CallServiceProxy(threading.Thread):
             # need lock to protect
             call_id = data['id']
             value = data['values']
+            '''
             with self.lock:
                 if value:
                     self.event_queue[call_id]['result'] = value[0]
-            
                 self.event_queue[call_id]['event'].set()
+            '''
+
+            #-- edit at 13:22 12/26/2016
+	    value_unicode = {}
+	    for key, one_value in value.items(): # format of keys: unicode to string 
+		value_unicode[unicodedata.normalize('NFKD',key).encode('ascii','ignore')] = one_value
+
+            with self.lock:
+                if value:
+                    self.event_queue[call_id]['result'] = value_unicode # should be a dict
+                self.event_queue[call_id]['event'].set()
+            #--
 
         except Exception, e:
             rospy.logerr('Failed to publish message on topic %s. Reason: %s', self.service_name, str(e))
