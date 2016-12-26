@@ -120,7 +120,9 @@ def wait_service_ready(service_name, url):
     
     print "wait_service_ready\n"
 
-    return local_service_type, local_service_args
+    service_args = local_service_args.split()
+
+    return local_service_type, service_args
     
 class SubscribedTopicProxy(threading.Thread):
     def __init__(self, topic_name, url, queue_size, test = False):
@@ -252,18 +254,15 @@ class CallServiceProxy(threading.Thread):
             }
 
 
-	'''
+    '''
         if type(self.service_args) == str:
             args_list = req.get(self.service_args) #[ req.get(self.service_args) ]  
         else:
             args_list = [ req.get(it) for it in self.service_args ]
 
-	'''
+    '''
 
-        if type(self.service_args) == str:
-            args_lists = getattr(req, self.service_args)
-        else:
-            args_lists = [ getattr(req, it) for it in self.service_args ]
+        args_lists = [ getattr(req, it) for it in self.service_args ]
 
         try:
             self.ws.send(json.dumps({
@@ -283,7 +282,7 @@ class CallServiceProxy(threading.Thread):
             ret = self.event_queue['call_id'].get('result')
             self.event_queue.pop('call_id')
 
-   	rospy.loginfo("call back2\n")
+    rospy.loginfo("call back2\n")
 
         return ret
 
@@ -423,13 +422,13 @@ class keep_container_live(threading.Thread): #Connect to server every 20 seconds
     def run(self):   
         while True:  
             try:
-        	response = urllib2.Request(self.flask_url) 
-		containerMsg = urllib2.urlopen(response).read() 
-            	time.sleep(20)
-		print containerMsg
-	    except Exception, e:
+            response = urllib2.Request(self.flask_url) 
+        containerMsg = urllib2.urlopen(response).read() 
+                time.sleep(20)
+        print containerMsg
+        except Exception, e:
                 rospy.logerr('Failed to connect to PING. Reason: %s', str(e))
-            	  
+                  
 
 def start_proxies():  
     parser = argparse.ArgumentParser()
@@ -452,8 +451,8 @@ def start_proxies():
     try:
         req = urllib2.Request(httpurl)
         url_and_containerid = urllib2.urlopen(req).read()
-	wsurl = url_and_containerid.split(" ")[0]
-	containerid = url_and_containerid.split(" ")[1]
+    wsurl = url_and_containerid.split(" ")[0]
+    containerid = url_and_containerid.split(" ")[1]
     except Exception, e:
         rospy.logerr('Failed to get websocket address for image %s from %s. Reason: %s', args.image_id, httpurl, str(e))
         return
@@ -479,9 +478,4 @@ def start_proxies():
         proxy.start()
 
     rospy.spin()
-
     
-
-
-    
-
