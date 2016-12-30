@@ -8,6 +8,7 @@ from rosservice import get_service_type, get_service_args, call_service
 from rostopic import get_topic_type
 import urllib2
 from rospkg.common import ResourceNotFound
+import unicodedata
 
 
 def get_remote_topic_type(topic_name, url):
@@ -118,11 +119,10 @@ def wait_service_ready(service_name, url):
             rospy.loginfo("Failed to get the arguments list of service %s. Retrying...", service_name)
         time.sleep(1)
     
-    print "wait_service_ready\n"
-
     service_args = local_service_args.split()
 
     return local_service_type, service_args
+
     
 class SubscribedTopicProxy(threading.Thread):
     def __init__(self, topic_name, url, queue_size, test = False):
@@ -223,7 +223,6 @@ class CallServiceProxy(threading.Thread):
             msg_module = import_module(service_type_module + '.srv')
             self.srvtype = getattr(msg_module, service_type_name)
             
-            print 'begin to call'
             if self.test:
                 self.caller = rospy.Service(self.service_name + '_rb', self.srvtype, self.callback)#, self.queue_size)
             else: 
@@ -244,75 +243,59 @@ class CallServiceProxy(threading.Thread):
 
         sleepEvent = threading.Event()
         sleepEvent.clear()
-        call_id = str(uuid.uuid1())
+        call_id = str(uuid.uuid1()).encode('ascii')
 
         with self.lock:
         # need lock to protect
-            self.event_queue['call_id'] = {
+            self.event_queue[call_id] = {
                 'result': None,
                 'event': sleepEvent
             }
-
-        #args_lists = [ getattr(req, it) for it in self.service_args ]
-        args_lists = []
-	for it in self.service_args.split(' '):
-	    if it != '':
-		args_lists.append(getattr(req, it))
-
+	
+	args_lists = [ getattr(req, it) for it in self.service_args ]
+	
         try:
             self.ws.send(json.dumps({
                 'op': 'call_service',
                 'id': call_id,
-                'service': self.service_name
+                'service': self.service_name,
                 'args': args_lists
             }))
         except Exception, e:
             rospy.logerr('Failed to publish message on topic %s with %s. Reason: %s', self.service_name, self.service_args, str(e))
-        
 
         sleepEvent.wait()
 
         with self.lock:
         # need lock to protect
-            ret = self.event_queue['call_id'].get('result')
-            self.event_queue.pop('call_id')
-
-    rospy.loginfo("call back2\n")
+            ret = self.event_queue[call_id].get('result')
+            self.event_queue.pop(call_id)
 
         return ret
 
 
     def on_message(self, ws, message):
         data = json.loads(message)
-
-        if not data or data['op'] != 'service_response' or data['service'] != self.service_type:
+        if not data or data['op'] != 'service_response' or data['service'] != self.service_name:
             rospy.logerr('Failed to handle message on service type %s [%s]', self.service, data)
             return
-             
+	
         try:
             # need lock to protect
-            call_id = data['id']
-            value = data['values']
-            '''
-            with self.lock:
-                if value:
-                    self.event_queue[call_id]['result'] = value[0]
-                self.event_queue[call_id]['event'].set()
-            '''
-
-            #-- edit at 13:22 12/26/2016
+            call_id = data.get('id').encode('ascii')
+            value = data.get('values')
 	    value_unicode = {}
-	    for key, one_value in value.items(): # format of keys: unicode to string 
+	    for key, one_value in value.items():
 		value_unicode[unicodedata.normalize('NFKD',key).encode('ascii','ignore')] = one_value
 
             with self.lock:
                 if value:
-                    self.event_queue[call_id]['result'] = value_unicode # should be a dict
+                    self.event_queue[call_id]['result'] = value_unicode
                 self.event_queue[call_id]['event'].set()
-            #--
 
         except Exception, e:
             rospy.logerr('Failed to publish message on topic %s. Reason: %s', self.service_name, str(e))
+	
     
     def on_error(self, ws, error):
         rospy.logerr('Websocket connection error on service %s', self.service_name)
@@ -429,13 +412,13 @@ class keep_container_live(threading.Thread): #Connect to server every 20 seconds
     def run(self):   
         while True:  
             try:
-            response = urllib2.Request(self.flask_url) 
-        containerMsg = urllib2.urlopen(response).read() 
-                time.sleep(20)
-        print containerMsg
-        except Exception, e:
+        	response = urllib2.Request(self.flask_url) 
+		containerMsg = urllib2.urlopen(response).read() 
+            	time.sleep(20)
+		print containerMsg
+	    except Exception, e:
                 rospy.logerr('Failed to connect to PING. Reason: %s', str(e))
-                  
+
 
 def start_proxies():  
     parser = argparse.ArgumentParser()
@@ -458,8 +441,8 @@ def start_proxies():
     try:
         req = urllib2.Request(httpurl)
         url_and_containerid = urllib2.urlopen(req).read()
-    wsurl = url_and_containerid.split(" ")[0]
-    containerid = url_and_containerid.split(" ")[1]
+	wsurl = url_and_containerid.split(" ")[0]
+	containerid = url_and_containerid.split(" ")[1]
     except Exception, e:
         rospy.logerr('Failed to get websocket address for image %s from %s. Reason: %s', args.image_id, httpurl, str(e))
         return
@@ -485,4 +468,5 @@ def start_proxies():
         proxy.start()
 
     rospy.spin()
+
     
