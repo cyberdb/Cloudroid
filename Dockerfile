@@ -9,7 +9,7 @@ RUN chmod +x /catkin_install/devel/_setup_util.py
 RUN chmod +x /buildimages.sh
 
 RUN ./buildimages.sh
-
+RUN ./rosdep.py
 ENTRYPOINT ["/ros_entry.sh"]
 
 

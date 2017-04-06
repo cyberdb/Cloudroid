@@ -30,7 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import zipfile, os, shutil, json, time, logging
-from docker import Client
+
 import docker
 from app import db, models 
 from app.models import *
@@ -88,7 +88,7 @@ def downloadFileBuild(downloadFileName):
             
 
         
-def uploadFile(ros_file, manifest_file, comments):  
+def uploadFile(ros_file, manifest_file, comments):
     upload_path='./upload'
     logging.info('Uploading %s to path %s', ros_file.filename, upload_path)
     
@@ -146,7 +146,7 @@ def uploadFile(ros_file, manifest_file, comments):
     '''Building the docker image''' 
     logging.info('Generating docker image with tag %s', image_name)
     try:
-        docker_client = docker.Client(base_url = 'unix://var/run/docker.sock')
+        docker_client = docker.from_env()
         registry_imagename = registry +'/'+ image_name
         generator = docker_client.build(path=".", rm = True, tag = registry_imagename, container_limits = container_limits)
         
@@ -195,7 +195,7 @@ def getServicePort(image_name):
     logging.info('Starting a new services with image %s', image_name)
     
     try:
-        client = docker.Client(base_url=DOCKER_PORT)
+        client = docker.from_env()
         image = registry+'/'+image_name
         com_cre_ser = 'sudo docker service create --replicas 1  --publish ' + ':9090 ' + image
         service_ps = os.popen(com_cre_ser).read().split('\n')
@@ -266,7 +266,7 @@ def removeServices(serviceid):
     logging.info('Remove the service %s', serviceid)
     
     try:
-        docker_client = docker.Client(base_url=DOCKER_PORT)
+        docker_client = docker.from_env()
         docker_client.remove_service(serviceid)
         remove_con = models.Service.query.all()
         for i in remove_con:

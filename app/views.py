@@ -117,10 +117,6 @@ def upload():
     
     form = UploadForm()
     if form.validate_on_submit():
-        action_error_msg = None
-        param_do = form.do_action.data
-        
-        #if (param_do == 'upload'):
         action_msg = uploadFile(form.ros_file.data, form.manifest_file.data, form.comments.data)
         action_list = action_msg.split(";")
         if len(action_list) != 2:
@@ -163,7 +159,7 @@ def download(proxy_name):
     form = UploadForm()
     proxy_name_zip = proxy_name + ".zip"
     path1 = app.root_path+'/download'
-    path2 =  os.path.join(path1, proxy_name_zip)
+    path2 = os.path.join(path1, proxy_name_zip)
     if os.path.exists(path2):
         return send_from_directory(path1,proxy_name_zip,as_attachment=True)
     action_error_msg = downloadFileBuild(proxy_name)

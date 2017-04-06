@@ -7,13 +7,9 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/catkin_install/devel/src
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/catkin_install/src
 
 
-i=1
-while [ $? -ne 0 ] || [ "$i" != "5" ]
-do 
-	i=$(($i+1))
-	apt-get update
-done
+
+apt-get update
 
 
-./rosdep.py
+
 
