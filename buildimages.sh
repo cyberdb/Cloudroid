@@ -6,10 +6,6 @@ source "/catkin_install/devel/setup.bash"
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/catkin_install/devel/src
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/catkin_install/src
 
-
-
 apt-get update
 
-
-
-
+echo Y|rosdep install $1
