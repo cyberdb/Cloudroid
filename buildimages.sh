@@ -8,4 +8,4 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:/catkin_install/src
 
 apt-get update
 
-echo Y|rosdep install $1
+rosdep install $1 -y
