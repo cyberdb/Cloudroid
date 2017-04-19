@@ -169,80 +169,80 @@ def download(proxy_name):
         return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = False)
 
 
-@app.route('/nodes', methods=['GET'])
-def nodes():
-    from app import db, models
-    nodes = models.Node.query.all()
-    result = []
-    part_line = {'nodename':'default','nodeip':'default'}
-    for i in nodes:
-        part_line['nodename'] = i.nodename
-        part_line['nodeip'] = i.nodeip
-        result.append(part_line)
-        part_line = {}
-    print result
-    return render_template('nodes.html', nodetable=result)
+# @app.route('/nodes', methods=['GET'])
+# def nodes():
+#     from app import db, models
+#     nodes = models.Node.query.all()
+#     result = []
+#     part_line = {'nodename':'default','nodeip':'default'}
+#     for i in nodes:
+#         part_line['nodename'] = i.nodename
+#         part_line['nodeip'] = i.nodeip
+#         result.append(part_line)
+#         part_line = {}
+#     print result
+#     return render_template('nodes.html', nodetable=result)
 
 
-@app.route('/addnode', methods=['GET', 'POST'])
-def addnode():
-    from app import db, models
-    from app.forms import NodeForm
-    form = NodeForm()
-    nodes = models.Node.query.all()
-    result = []
-    part_line = {'nodename':'default','nodeip':'default'}
-    if form.validate_on_submit():
-        exist_node = 0
-        for i in nodes:
-            if form.nodename.data == i.nodename:
-                db.session.delete(i)
-                db.session.commit()
-                u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
-                db.session.add(u)
-                db.session.commit()
-                part_line['nodename'] = form.nodename.data
-                part_line['nodeip'] = form.nodeip.data
-                print form.nodeip.data
-                print part_line['nodeip']
-                result.append(part_line)
-                part_line = {}
-                exist_node = 1
-                print result
-            else:
-                part_line['nodename'] = i.nodename
-                part_line['nodeip'] = i.nodeip
-                result.append(part_line)
-                part_line = {}
-        if exist_node == 0:
-            u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
-            db.session.add(u)
-            db.session.commit()
-            part_line['nodename'] = form.nodename.data
-            part_line['nodeip'] = form.nodeip.data
-            result.append(part_line)
-            return render_template('nodes.html', nodetable=result)
-        return render_template('nodes.html', nodetable=result)
-    else:
-        return render_template('addnode.html', form = form)
+# @app.route('/addnode', methods=['GET', 'POST'])
+# def addnode():
+#     from app import db, models
+#     from app.forms import NodeForm
+#     form = NodeForm()
+#     nodes = models.Node.query.all()
+#     result = []
+#     part_line = {'nodename':'default','nodeip':'default'}
+#     if form.validate_on_submit():
+#         exist_node = 0
+#         for i in nodes:
+#             if form.nodename.data == i.nodename:
+#                 db.session.delete(i)
+#                 db.session.commit()
+#                 u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
+#                 db.session.add(u)
+#                 db.session.commit()
+#                 part_line['nodename'] = form.nodename.data
+#                 part_line['nodeip'] = form.nodeip.data
+#                 print form.nodeip.data
+#                 print part_line['nodeip']
+#                 result.append(part_line)
+#                 part_line = {}
+#                 exist_node = 1
+#                 print result
+#             else:
+#                 part_line['nodename'] = i.nodename
+#                 part_line['nodeip'] = i.nodeip
+#                 result.append(part_line)
+#                 part_line = {}
+#         if exist_node == 0:
+#             u = models.Node(nodename=form.nodename.data, nodeip=form.nodeip.data)
+#             db.session.add(u)
+#             db.session.commit()
+#             part_line['nodename'] = form.nodename.data
+#             part_line['nodeip'] = form.nodeip.data
+#             result.append(part_line)
+#             return render_template('nodes.html', nodetable=result)
+#         return render_template('nodes.html', nodetable=result)
+#     else:
+#         return render_template('addnode.html', form = form)
 
 
-@app.route('/delnode/<string:nodename>', methods=['GET'])
-def delnode(nodename):
-    from app import db, models
-    nodes = models.Node.query.all()
-    result = []
-    part_line = {'nodename': 'default', 'nodeip': 'default'}
-    for i in nodes:
-        if i.nodename == nodename:
-            db.session.delete(i)
-            db.session.commit()
-            continue
-        part_line['nodename'] = i.nodename
-        part_line['nodeip'] = i.nodeip
-        result.append(part_line)
-        part_line = {}
-    return render_template('nodes.html', nodetable=result)
+# @app.route('/delnode/<string:nodename>', methods=['GET'])
+# def delnode(nodename):
+#     from app import db, models
+#     nodes = models.Node.query.all()
+#     result = []
+#     part_line = {'nodename': 'default', 'nodeip': 'default'}
+#     for i in nodes:
+#         if i.nodename == nodename:
+#             db.session.delete(i)
+#             db.session.commit()
+#             continue
+#         part_line['nodename'] = i.nodename
+#         part_line['nodeip'] = i.nodeip
+#         result.append(part_line)
+#         part_line = {}
+#     return render_template('nodes.html', nodetable=result)
 
 
 

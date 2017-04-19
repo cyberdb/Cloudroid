@@ -42,7 +42,7 @@ from flask.globals import session
 from Tkinter import image_names
 
 
-registry = '127.0.0.1:5000'
+registry = '192.168.43.87:5000'
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
@@ -148,34 +148,22 @@ def uploadFile(ros_file, manifest_file, comments):
     try:
         docker_client = docker.from_env()
         registry_imagename = registry +'/'+ image_name
-        generator = docker_client.build(path=".", rm = True, tag = registry_imagename, container_limits = container_limits)
-        
-        '''Check any error by inspecting the output of build()''' 
-        for line in generator:
-            try:
-                stream_line = StreamLineBuildGenerator(line)
-                if hasattr(stream_line, "error"):
-                    error_string = 'Unable to generating docker image with name {}. \nReason: {}'.format(registry_imagename, stream_line.error)
-                    logging.error(error_string)
-                    return error_string
-            except ValueError:
-                ''' If we are not able to deserialize the received line as JSON object, just ignore it'''
-                continue
-        '''Push the images to private repository'''
-        response_push = docker_client.push(registry_imagename, stream = True)
-        '''Check any error by inspecting the output of push()'''
-        for line in response_push:
-            try:
-                json_line = json.loads(line)
-                if 'error' in json_line.keys():
-                    error_string = 'Unable to push docker image with name {}. \nReason: {}'.format(registry_imagename, json_line['error'])
-                    logging.error(error_string)
-                    return error_string
-            except ValueError:
-                ''' If we are not able to deserialize the received line as JSON object, just ignore it'''
-                continue
-    except Exception, e:
-        error_string = 'Unable to generating docker image with name {}. \nReason: {}'.format(image_name, str(e))
+        docker_client.images.build(path=".", rm = True, tag = registry_imagename, container_limits = container_limits)
+
+    except docker.errors.BuildError as e:
+            error_string = 'Unable to build docker image with name {}. \nReason: {}'.format(registry_imagename,str(e))
+            logging.error(error_string)
+            return error_string
+    except docker.errors.APIError as e:
+            error_string = 'Unable to build docker image with name {}. \nReason: {}'.format(registry_imagename,str(e))
+            logging.error(error_string)
+            return error_string
+
+    '''Push the images to private repository'''
+    try:
+        docker_client.push(registry_imagename, stream=True)
+    except docker.errors.APIError as e:
+        error_string = 'Unable to push the image {} to private registry. \nReason: {}'.format(image_name, str(e))
         logging.error(error_string)
         return error_string
         
@@ -195,31 +183,18 @@ def getServicePort(image_name):
     logging.info('Starting a new services with image %s', image_name)
     
     try:
-        client = docker.from_env()
         image = registry+'/'+image_name
         com_cre_ser = 'sudo docker service create --replicas 1  --publish ' + ':9090 ' + image
         service_ps = os.popen(com_cre_ser).read().split('\n')
         service_id = service_ps[0]
-        time.sleep(10)
-        ser_ins = client.inspect_service(service_id)
-        port = ser_ins['Endpoint']['Ports'][0]['PublishedPort']
-        print port
-        ser_ps_com = "sudo docker service ps " + service_id
-        service_ps = os.popen(ser_ps_com).read().split('\n')
-        if service_ps[1].split()[4] == 'Running':
-            node = service_ps[1].split()[3]
-        else:
-            logging.error('Unable to create the service with image %s. \nReason: %s', service_ps[1].split()[6])
-            return
-        print node
-        get_node = models.Node.query.filter_by(nodename = node).first()
-        ip = get_node.nodeip
-        '''
-        if (node == 'micros-PowerEdge-R430'):
-            ip = '192.168.1.121'
-        elif (node == 'huben-PowerEdge-R430'):
-            ip = '192.168.1.101'
-        '''
+        time.sleep(5)
+        ser_ins = "sudo docker service inspect " + service_id
+        ser_ins_ = json.loads(os.popen(ser_ins).read())
+        port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["TargetPort"]
+
+        get_node = models.ServerIP.query.first()
+        ip = get_node.serverip
+
     except Exception, e:
         logging.error('Unable to create the service with image %s. \nReason: %s', image_name, str(e))
         return
@@ -267,7 +242,7 @@ def removeServices(serviceid):
     
     try:
         docker_client = docker.from_env()
-        docker_client.remove_service(serviceid)
+        docker_client.services.remove(serviceid)
         remove_con = models.Service.query.all()
         for i in remove_con:
             if (i.serviceid == serviceid):
@@ -275,31 +250,24 @@ def removeServices(serviceid):
                 db.session.commit()
                 break
                
-    except Exception, e:
+    except docker.errors.APIError as e:
         logging.error('Unable to remove the service %s. \nReason: %s', serviceid, str(e))
         return
 
 
 def deleteImage(image_name):
     logging.info('Delete the image %s', image_name)
-    
     try:
-        #docker_client = docker.Client(base_url=DOCKER_PORT)
-        #docker_client.remove_image(image = image_name, force = True)
+        docker_client = docker.from_env()
+        docker_client.images.remove(image=image_name,force=True)
+        image = models.Image.query.filter_by(imagename=image_name).first()
+        db.session.delete(image)
+        db.session.commit()
+    except docker.errors.APIError as e:
         image = models.Image.query.filter_by(imagename = image_name).first()
         db.session.delete(image)
-        db.session.commit() 
-    
-        
-    except Exception, e:
-        print str(e)
-        if (str(e).find('No such image:')):
-            image = models.Image.query.filter_by(imagename = image_name).first()
-            db.session.delete(image)
-            db.session.commit()
-            error_string = 'Unable to delete the image {}. \nReason: {}. Delete the record'.format(image_name, str(e)) 
-        else:
-            error_string = 'Unable to delete the image {}. \nReason: {}'.format(image_name, str(e))
+        db.session.commit()
+        error_string = 'Unable to delete the image {}. \nReason: {}. Delete the record'.format(image_name, str(e))
         logging.error(error_string)
         return error_string
     

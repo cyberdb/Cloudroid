@@ -89,14 +89,6 @@ class Service(db.Model):
     username =  db.Column(db.String(100))
     firstcreatetime = db.Column(db.DateTime())
 
-
-class Node(db.Model):
-    __tablename__ = 'nodes'
-    uid = db.Column(db.Integer, primary_key=True)
-    nodename = db.Column(db.String(100))
-    nodeip = db.Column(db.String(100))
-
-    
 class ServerIP(db.Model):
     __tablename__ = 'serverip'
     uid = db.Column(db.Integer, primary_key = True)
