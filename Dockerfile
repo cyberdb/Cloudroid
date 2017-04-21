@@ -12,5 +12,5 @@ RUN chmod +x /buildimages.sh
 RUN ./rosdep.py
 
 
-ENTRYPOINT ["/ros_entry.sh”]
+ENTRYPOINT ["/ros_entry.sh"]
 
