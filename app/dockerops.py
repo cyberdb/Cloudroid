@@ -259,7 +259,8 @@ def deleteImage(image_name):
     logging.info('Delete the image %s', image_name)
     try:
         docker_client = docker.from_env()
-        docker_client.images.remove(image=image_name,force=True)
+        registry_imagename = registry + '/' + image_name
+        docker_client.images.remove(image=registry_imagename,force=True)
         image = models.Image.query.filter_by(imagename=image_name).first()
         db.session.delete(image)
         db.session.commit()
@@ -267,7 +268,7 @@ def deleteImage(image_name):
         image = models.Image.query.filter_by(imagename = image_name).first()
         db.session.delete(image)
         db.session.commit()
-        error_string = 'Unable to delete the image {}. \nReason: {}. Delete the record'.format(image_name, str(e))
+        error_string = 'Unable to delete the image {}. \nReason: {}. Delete the record'.format(registry_imagename, str(e))
         logging.error(error_string)
         return error_string
     
