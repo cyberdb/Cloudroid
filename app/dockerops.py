@@ -242,9 +242,10 @@ def removeServices(serviceid):
     
     try:
         docker_client = docker.from_env()
-        docker_client.services.remove(serviceid)
-        remove_con = models.Service.query.all()
-        for i in remove_con:
+        docker_client.services.get(serviceid)
+        docker_client.remove()
+        remove_ser = models.Service.query.all()
+        for i in remove_ser:
             if (i.serviceid == serviceid):
                 db.session.delete(i)
                 db.session.commit()
