@@ -161,7 +161,7 @@ def uploadFile(ros_file, manifest_file, comments):
 
     '''Push the images to private repository'''
     try:
-        docker_client.push(registry_imagename, stream=True)
+        docker_client.images.push(registry_imagename, stream=True)
     except docker.errors.APIError as e:
         error_string = 'Unable to push the image {} to private registry. \nReason: {}'.format(image_name, str(e))
         logging.error(error_string)
@@ -193,7 +193,10 @@ def getServicePort(image_name):
         port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["TargetPort"]
 
         get_node = models.ServerIP.query.first()
-        ip = get_node.serverip
+        if get_node.serverip == None:
+            ip = "127.0.0.1"
+        else:
+            ip = get_node.serverip
 
     except Exception, e:
         logging.error('Unable to create the service with image %s. \nReason: %s', image_name, str(e))
