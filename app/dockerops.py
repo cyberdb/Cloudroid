@@ -193,10 +193,7 @@ def getServicePort(image_name):
         port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["TargetPort"]
 
         get_node = models.ServerIP.query.first()
-        if get_node.serverip == None:
-            ip = "127.0.0.1"
-        else:
-            ip = get_node.serverip
+        ip = get_node.serverip
 
     except Exception, e:
         logging.error('Unable to create the service with image %s. \nReason: %s', image_name, str(e))

@@ -59,7 +59,7 @@ def before_request():
 @app.route('/index')
 @login_required
 def index():
-    posts = [{ 'body': 'Welcome to Robot Cloud!' }]
+    posts = [{ 'body': 'Welcome to Cloudroid! Please set your server IP first.' }]
     return render_template('index.html',posts=posts)
 
 
