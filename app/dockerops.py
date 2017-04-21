@@ -190,7 +190,7 @@ def getServicePort(image_name):
         time.sleep(5)
         ser_ins = "sudo docker service inspect " + service_id
         ser_ins_ = json.loads(os.popen(ser_ins).read())
-        port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["TargetPort"]
+        port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["PublishedPort"]
 
         get_node = models.ServerIP.query.first()
         ip = get_node.serverip
