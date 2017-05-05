@@ -262,7 +262,7 @@ class CallServiceProxy(threading.Thread):
                 'args': args_lists
             }))
         except Exception, e:
-            rospy.logerr('Failed to publish message on topic %s with %s. Reason: %s', self.service_name, self.service_args, str(e))
+            rospy.logerr('Failed to call service on topic %s with %s. Reason: %s', self.service_name, self.service_args, str(e))
 
         sleepEvent.wait()
 

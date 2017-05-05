@@ -42,7 +42,7 @@ from flask.globals import session
 from Tkinter import image_names
 
 
-registry = '192.168.43.87:5000'
+registry = '192.168.43.62:5000'
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
@@ -190,8 +190,8 @@ def getServicePort(image_name):
         time.sleep(5)
         ser_ins = "sudo docker service inspect " + service_id
         ser_ins_ = json.loads(os.popen(ser_ins).read())
-        port=ser_ins_[0]["Spec"]["EndpointSpec"]["Ports"][0]["PublishedPort"]
-
+        port=ser_ins_[0]["Endpoint"]["Ports"][0]["PublishedPort"]
+        
         get_node = models.ServerIP.query.first()
         ip = get_node.serverip
 
