@@ -84,7 +84,7 @@ def wait_topic_ready(topic_name, url):
     
     local_topic_type = None
     while local_topic_type == None:
-        local_topic_type, _, _ = get_service_type(topic_name)
+        local_topic_type = get_service_type(topic_name)
         if (local_topic_type == None):
             rospy.loginfo("Failed to get the local type of topic %s. Retrying...", topic_name)
         time.sleep(1)
