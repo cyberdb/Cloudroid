@@ -242,8 +242,8 @@ def removeServices(serviceid):
     
     try:
         docker_client = docker.from_env()
-        docker_client.services.get(serviceid)
-        docker_client.remove()
+        docker_remove = docker_client.services.get(serviceid)
+        docker_remove.remove()
         remove_ser = models.Service.query.all()
         for i in remove_ser:
             if (i.serviceid == serviceid):

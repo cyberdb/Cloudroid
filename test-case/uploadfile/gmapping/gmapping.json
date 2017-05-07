@@ -1,10 +1,10 @@
 {
-   "subscribed_topics": ["/tf","/scan"],
+   "subscribed_topics": ["/tf","/base_scan"],
    "published_topics": ["/map"],
-   "advertised_services": ["dynamic_map"],
+   "advertised_services": [],
    "advertised_actions": [],
    
-   "start_cmds": ["rosrun gmapping slam_gmapping"],
+   "start_cmds": ["rosrun gmapping slam_gmapping scan:=base_scan"],
 
    "mem_limit": "1073741824",
    "memswap_limit" : "1073741824",

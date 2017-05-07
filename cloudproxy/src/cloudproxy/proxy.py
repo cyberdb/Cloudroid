@@ -78,19 +78,22 @@ def wait_topic_ready(topic_name, url):
     remote_topic_type = ""
     while remote_topic_type == "": 
         remote_topic_type = get_remote_topic_type(topic_name, url)
+	#print remote_topic_type+"  remote_topic_type"
         if (remote_topic_type == ""):
             rospy.loginfo("Failed to get the remote type of topic %s. Retrying...", topic_name)
         time.sleep(1)
     
-    local_topic_type = None
-    while local_topic_type == None:
-        local_topic_type = get_service_type(topic_name)
-        if (local_topic_type == None):
+    local_topic_type = (None, None, None)
+    while local_topic_type[0] == None:
+        local_topic_type = get_topic_type(topic_name)
+	#print str(local_topic_type)+"  local_topic_type"
+        if (local_topic_type[0] == None):
             rospy.loginfo("Failed to get the local type of topic %s. Retrying...", topic_name)
         time.sleep(1)
     
-    if remote_topic_type == local_topic_type:
-        return local_topic_type
+    if remote_topic_type == local_topic_type[0]:
+	#print str(local_topic_type)+"  equal"
+        return local_topic_type[0]
     else:
         return None
 
@@ -134,6 +137,7 @@ class SubscribedTopicProxy(threading.Thread):
     
     def run(self):
         self.topic_type = wait_topic_ready(self.topic_name, self.url)
+	#print str(self.topic_type)+"  self.topic_type"
         if not self.topic_type:
             rospy.logerr('Type of topic %s are not equal in the remote and local sides', self.topic_name)
             return
@@ -462,10 +466,11 @@ def start_proxies():
     for topic_name in args.published_topics:
         proxy = PublishedTopicProxy(topic_name, wsurl, args.test)
         proxy.start()
-
-    for service_name in args.services:
-        proxy = CallServiceProxy(service_name, wsurl, args.test)
-        proxy.start()
+    
+    if args.services != None:  
+	for service_name in args.services:
+    		proxy = CallServiceProxy(service_name, wsurl, args.test)
+	        proxy.start()
 
     rospy.spin()
 
