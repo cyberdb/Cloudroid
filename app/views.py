@@ -127,30 +127,11 @@ def upload():
         url_base = url()
         succeed = (action_error_msg == "None")
         if succeed == True:
-            return render_template('download.html',download_url = url_base+"/download/"+proxy_name)
+            return render_template('download.html',download_url = "download/"+proxy_name)
         else:
             return render_template('upload.html',form=form, action_error_msg = action_error_msg, succeed = succeed)   
          
     return render_template('upload.html',form=form, action_error_msg = None, succeed = False)
-
-
-@app.route('/setting', methods=['GET', 'POST'])
-def setting():
-    from app.forms import SetForm
-    
-    form = SetForm()
-    if form.validate_on_submit():
-        servers = models.ServerIP.query.all()
-        for server in servers:
-            db.session.delete(server)
-            db.session.commit()
-        serverip = form.ip.data
-        u = models.ServerIP(serverip = serverip)
-        db.session.add(u)
-        db.session.commit()
-        return render_template('setting.html',form=form, succeed = True)
-    return render_template('setting.html',form=form)
-
 
 @app.route('/download/<string:proxy_name>', methods=['GET'])
 def download(proxy_name):

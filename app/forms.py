@@ -61,9 +61,4 @@ class NodeForm(Form):
     nodename = StringField('Nodename', validators=[DataRequired("Please enter the Nodename.")])
     nodeip = StringField('Nodeip', validators=[DataRequired("Please enter the Nodeip.")])
 
-
-class SetForm(Form):
-    ip = StringField('IP', validators=[DataRequired("Please enter the IP of server.")])
-
-
         
