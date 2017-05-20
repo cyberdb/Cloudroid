@@ -1,0 +1,11 @@
+*.pyc
+robotcloud.log
+database/robotcloud.db
+
+*.DS_Store
+upload/*.zip
+app/download/*.zip
+client/
+
+# sublime generated file
+._*
