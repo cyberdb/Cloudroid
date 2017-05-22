@@ -184,11 +184,11 @@ def getServicePort(image_name):
     
     try:
         image = registry+'/'+image_name
-        com_cre_ser = 'sudo docker service create --replicas 1  --publish ' + ':9090 ' + image
+        com_cre_ser = 'docker service create --replicas 1  --publish ' + ':9090 ' + image
         service_ps = os.popen(com_cre_ser).read().split('\n')
         service_id = service_ps[0]
         time.sleep(5)
-        ser_ins = "sudo docker service inspect " + service_id
+        ser_ins = "docker service inspect " + service_id
         ser_ins_ = json.loads(os.popen(ser_ins).read())
         port=ser_ins_[0]["Endpoint"]["Ports"][0]["PublishedPort"]
         
