@@ -129,6 +129,7 @@ def uploadFile(ros_file, manifest_file, comments):
     advertised_services = manifest.get('advertised_services')
     advertised_actions = manifest.get('advertised_actions')   
     start_cmds = manifest.get('start_cmds')
+    external_lib_paths = manifest.get('external_lib_paths', [])
     mem_limit = manifest.get('mem_limit')
     memswap_limit = manifest.get('memswap_limit')
     cpushares = manifest.get('cpushares')
@@ -139,7 +140,7 @@ def uploadFile(ros_file, manifest_file, comments):
         error_string = 'Manifest file {} does not contain start_cmds. Generate docker image failed'.format(manifest_file.getFileName())
         logging.error(error_string)
         return error_string
-    rosentry = render_template('ros_entry.sh', start_cmds = start_cmds)
+    rosentry = render_template('ros_entry.sh', start_cmds = start_cmds, external_lib_paths=external_lib_paths)
     with open("./temp/ros_entry.sh", "wb") as fh:
         fh.write(rosentry)
             
@@ -298,3 +299,4 @@ def StringToList(stringa):
         lista.pop()
         return lista
     
+
