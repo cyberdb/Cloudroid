@@ -15,6 +15,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/catkin_install/src/{{ path }}
 
 nohup roslaunch rosbridge_server rosbridge_websocket.launch > /dev/null &
 
+sleep 1
+
 {% for cmd in start_cmds %}
 {{ cmd }}
 {% endfor %}
