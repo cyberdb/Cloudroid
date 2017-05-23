@@ -272,7 +272,7 @@ class CallServiceProxy(threading.Thread):
 
         with self.lock:
         # need lock to protect
-            ret = self.event_queue[call_id].get('result')
+            ret = self.event_queue[call_id].get('result', {})
             self.event_queue.pop(call_id)
 
         return ret
@@ -293,8 +293,7 @@ class CallServiceProxy(threading.Thread):
 		value_unicode[unicodedata.normalize('NFKD',key).encode('ascii','ignore')] = one_value
 
             with self.lock:
-                if value:
-                    self.event_queue[call_id]['result'] = value_unicode
+                self.event_queue[call_id]['result'] = value_unicode
                 self.event_queue[call_id]['event'].set()
 
         except Exception, e:
