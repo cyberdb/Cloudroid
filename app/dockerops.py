@@ -253,8 +253,15 @@ def removeServices(serviceid):
                 break
                
     except docker.errors.APIError as e:
-        logging.error('Unable to remove the service %s. \nReason: %s', serviceid, str(e))
-        return
+        if e.status_code == 404:
+            remove_ser = models.Service.query.all()
+            for i in remove_ser:
+                if (i.serviceid == serviceid):
+                    db.session.delete(i)
+                    db.session.commit()
+                    break
+        else:
+            logging.error('Unable to remove the service %s. \nReason: %s', serviceid, str(e))
 
 
 def deleteImage(image_name):
