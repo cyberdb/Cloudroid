@@ -61,7 +61,7 @@ def downloadFileBuild(downloadFileName):
     
     
     '''Generating client-side proxy'''
-    client_path='./client'
+    client_path='./client/'
     download_path = './app/download'
     try:
         if os.path.exists(client_path):
@@ -69,8 +69,8 @@ def downloadFileBuild(downloadFileName):
         if os.path.exists(download_path):
             shutil.rmtree(download_path)
         os.mkdir(download_path)
-        unzip_cmd = 'unzip cloudproxy.zip -d ' + client_path
-        os.system(unzip_cmd)
+        rysnc_cmd = 'rsync -aP cloudproxy ' + client_path
+        os.system(rysnc_cmd)
         client_url = url()
         client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
                                         advertised_services = advertised_services, url = client_url, image_id = image_name)

@@ -6,10 +6,11 @@ import uuid
 from importlib import import_module
 from rosservice import get_service_type, get_service_args, call_service
 from rostopic import get_topic_type
+from rosgraph_msgs.msg import Clock
 import urllib2
 from rospkg.common import ResourceNotFound
 import unicodedata
-
+from websocket._abnf import ABNF
 
 def get_remote_topic_type(topic_name, url):
     while True:
@@ -91,9 +92,10 @@ def wait_topic_ready(topic_name, url):
             rospy.loginfo("Failed to get the local type of topic %s. Retrying...", topic_name)
         time.sleep(1)
     
-    if remote_topic_type == local_topic_type[0]:
-	#print str(local_topic_type)+"  equal"
-        return local_topic_type[0]
+    if topic_name == '/tf':
+        return 'tf/tfMessage'
+    elif remote_topic_type == local_topic_type[0]:
+        return remote_topic_type
     else:
         return None
 
@@ -125,6 +127,35 @@ def wait_service_ready(service_name, url):
     service_args = local_service_args.split()
 
     return local_service_type, service_args
+
+
+def to_nsec(t):
+    return t['secs'] * 1000000000L + t['nsecs'] 
+
+def get_message_timestamp(msg):
+    if type(msg) == dict:
+        if 'header' in msg:
+            return to_nsec(msg['header']['stamp'])
+        elif 'transforms' in msg:
+            return max([to_nsec(tran['header']['stamp']) for tran in msg['transforms']])
+        else:
+            return 0
+
+    return 0
+
+_lock = threading.Lock()
+_timestamp = {}
+
+def comp_and_replace_value(topic, rostype, val):
+    global _lock, _timestamp
+    with _lock:
+        if rostype == Clock._type:
+            return True
+        if topic not in _timestamp or val > _timestamp[topic]:
+            _timestamp[topic] = val
+            return True
+        else:
+            return False
 
     
 class SubscribedTopicProxy(threading.Thread):
@@ -163,6 +194,10 @@ class SubscribedTopicProxy(threading.Thread):
         
     def on_message(self, ws, message):
         data = json.loads(message)
+        
+        ts = get_message_timestamp(data['msg'])
+        if not comp_and_replace_value(data['topic'], self.topic_type, ts):
+            return
 
         rosmsg = self.rostype()
         if not data or data['op'] != 'publish' or data['topic'] != self.topic_name:
@@ -285,19 +320,17 @@ class CallServiceProxy(threading.Thread):
             return
 	
         try:
+            rosmsg = self.srvtype()._response_class()
+            msgconv.populate_instance(data['values'], rosmsg)
             # need lock to protect
             call_id = data.get('id').encode('ascii')
-            value = data.get('values')
-	    value_unicode = {}
-	    for key, one_value in value.items():
-		value_unicode[unicodedata.normalize('NFKD',key).encode('ascii','ignore')] = one_value
 
             with self.lock:
-                self.event_queue[call_id]['result'] = value_unicode
+                self.event_queue[call_id]['result'] = rosmsg
                 self.event_queue[call_id]['event'].set()
 
         except Exception, e:
-            rospy.logerr('Failed to publish message on topic %s. Reason: %s', self.service_name, str(e))
+            rospy.logerr('Failed to call service on %s. Reason: %s', self.service_name, str(e))
 	
     
     def on_error(self, ws, error):
@@ -360,6 +393,10 @@ class PublishedTopicProxy(threading.Thread):
             return
         
         data = msgconv.extract_values(rosmsg)
+        ts = get_message_timestamp(data)
+
+        if not comp_and_replace_value(self.rb_topic_name, self.topic_type, ts):
+            return
         try:
             self.ws.send(json.dumps({
                 'op': 'publish',
