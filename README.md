@@ -8,10 +8,54 @@ By adopting the docker container technology in the back-end, a ROS package which
 
 Please contact us through dingbo@nudt.edu.cn or bding@msn.com. Any feedback would be greatly appreciated.
 
-## Release notes
 
-v0.10 [2016-08-31]
+## Build Cloudroid
+Cloudroid is built and tested on Ubuntu 14.04.
 
-1. Initial open source release
+1. Since it currently based on Docker Swarm, Docker(https://docs.docker.com/engine/installation/linux/ubuntu/) must be installed on each host nodes.
 
+2. Add user to the Docker group, logout and login again:
 
+```bash
+    sudo addgroup $USER docker
+``` 
+
+3. Initialize the Swarm cluster, and setup the local registry:
+
+```bash
+    docker swarm init 
+    docker run -d -p 5000:5000 --restart=always --name registry registry:2
+```
+
+4. Install python components and other dependencies:
+
+```bash
+    sudo apt-get update
+    sudo apt-get install python-dev python-pip python-tk git zip unzip
+    sudo pip install pip --upgrade
+```
+
+5. In the root directory of Cloudroid project, install other python requirements:
+
+```bash
+    git clone https://github.com/zhangpf/cloudroid
+    cd cloudroid/
+    sudo pip install -r requirements.txt
+```
+
+6. Build the base ros image from the `base-image` directory, push it to the local docker registry:
+
+```bash
+    cd base-image/
+    docker build .
+    docker tag $(docker images -q | head -n1) ros:my
+    docker tag ros:my localhost:5000/ros:my
+    docker push localhost:5000/ros:my
+```    
+
+7. Run cloudroid server:
+
+```bash
+    cd ..
+    python run.py
+```
