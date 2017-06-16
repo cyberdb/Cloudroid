@@ -40,6 +40,7 @@ Cloudroid is built and tested on Ubuntu 14.04.
 ```bash
     git clone https://github.com/zhangpf/cloudroid
     cd cloudroid/
+    git submodule update --recursive
     sudo pip install -r requirements.txt
 ```
 
