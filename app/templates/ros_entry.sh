@@ -3,6 +3,7 @@ set -e
 
 # setup ros environment
 source "/opt/ros/$ROS_DISTRO/setup.bash"
+source "/rosbridge_ws/devel/setup.bash"
 source "/catkin_install/devel/setup.bash" || true
 source "/catkin_install/install_isolated/setup.bash" || true
 export ROS_HOSTNAME=localhost
