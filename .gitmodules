@@ -1,0 +1,3 @@
+[submodule "base-image/rosbridge"]
+	path = base-image/rosbridge
+	url = https://github.com/zhangpf/rosbridge_suite
