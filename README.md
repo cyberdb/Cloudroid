@@ -10,7 +10,7 @@ Please contact us through dingbo@nudt.edu.cn or bding@msn.com. Any feedback woul
 
 
 ## Build Cloudroid
-Cloudroid is built and tested on Ubuntu 14.04.
+Cloudroid is built and tested on Ubuntu 14.04, ROS indigo.
 
 1. Since it currently based on Docker Swarm, Docker(https://docs.docker.com/engine/installation/linux/ubuntu/) must be installed on each host nodes.
 
@@ -39,7 +39,7 @@ Cloudroid is built and tested on Ubuntu 14.04.
 
 ```bash
     git clone https://github.com/zhangpf/cloudroid
-    cd cloudroid/
+    cd Cloudroid/
     git submodule update --recursive
     sudo pip install -r requirements.txt
 ```
