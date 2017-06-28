@@ -109,6 +109,23 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route('/setting', methods=['GET', 'POST'])
+def setting():
+    from app.forms import SetForm
+    
+    form = SetForm()
+    if form.validate_on_submit():
+        servers = models.ServerIP.query.all()
+        for server in servers:
+            db.session.delete(server)
+            db.session.commit()
+        serverip = form.ip.data
+        u = models.ServerIP(serverip = serverip)
+        db.session.add(u)
+        db.session.commit()
+        return render_template('setting.html',form=form, succeed = True)
+    return render_template('setting.html',form=form)
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
