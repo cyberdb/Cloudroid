@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set active_page = "setting" %}
+{% block content %}
+<form action="{{ url_for('setting') }}" method="post" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr>
+          <td><b>Server IP(IP V4)</b> {{ form.ip(size=31, class="form-control") }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+        </tr>
+      </table>
+      <tr>
+        <td>
+          <button type="submit" class="btn btn-info" name="do_action" value="upload" onclick="$('#loading').show();$('#hiding').hide();">Submit</button>
+        </td>
+      </tr>
+
+      </table>
+    </div>
+  </div>
+</form>
+
+<div id="hiding">
+  {% if succeed %}
+    <div class="alert alert-success" role="alert">
+      <b>OK:</b> Succeeded to reset the server ip </b>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
