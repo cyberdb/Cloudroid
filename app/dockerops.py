@@ -183,7 +183,7 @@ def uploadFile(ros_file, manifest_file, comments):
 	compressed = pub_topic.get("compression")
 	raw = 'raw'
 	if compressed != 'none':
-	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (sub_node_name, raw, sub_topic_name, compressed, sub_topic_name_c))
+	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (pub_node_name, raw, pub_topic_name, compressed, pub_topic_name_c))
 
     for sub_topic in subscribed_topics:
 	sub_topic_name = sub_topic.get("topic_name")
@@ -192,7 +192,7 @@ def uploadFile(ros_file, manifest_file, comments):
 	compressed = sub_topic.get("compression")
 	raw = 'raw'
 	if compressed != 'none':
-	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (pub_node_name, compressed, pub_topic_name_c, raw, pub_topic_name))
+	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (sub_node_name, compressed, sub_topic_name_c, raw, sub_topic_name))
 
     topic_compress = render_template('compression.launch', compress_list = compress_list)
     with open("./temp/compression.launch", "wb") as fh:
