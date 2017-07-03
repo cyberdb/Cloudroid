@@ -3,7 +3,7 @@ set -e
 
 # setup ros environment
 source "/opt/ros/$ROS_DISTRO/setup.bash"
-source "/rosbridge_ws/devel/setup.bash"
+source "/rosbridge_ws/devel/setup.bash" || true
 source "/catkin_install/devel/setup.bash" || true
 source "/catkin_install/install_isolated/setup.bash" || true
 export ROS_HOSTNAME=localhost
@@ -21,6 +21,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/catkin_install/src/{{ path }}
 nohup roslaunch rosbridge_server rosbridge_websocket.launch > /dev/null &
 
 sleep 1
+
+roslaunch compression.launch &
 
 {% for cmd in start_cmds %}
 {{ cmd }}

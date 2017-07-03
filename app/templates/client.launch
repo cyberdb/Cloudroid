@@ -1,3 +1,4 @@
 <launch>
   <node name="client" pkg="cloudproxy" type="client" args = " {{url}} -i {{image_id}} {% if published_topics %}--pub {%for topic in published_topics%} '{{topic}}' {%endfor%}{%endif%} {% if subscribed_topics %}--sub {%for topic in subscribed_topics%} '{{topic}}' {%endfor%}{%endif%} {% if advertised_services %}--services {%for service in advertised_services%} '{{service}}' {%endfor%}{%endif%} {% if advertised_actions %}--actions {%for action in advertised_actions%} '{{action}}' {%endfor%}{%endif%}" output="screen"/>
+{% if compress_list %}{%for topic_compress_node in compress_list%}  '{{topic_compress_node}}' {%endfor%}{%endif%}
 </launch>

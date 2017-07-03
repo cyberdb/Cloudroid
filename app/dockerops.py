@@ -29,7 +29,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import zipfile, os, shutil, json, time, logging
+import zipfile, os, shutil, json, time, logging, ast
 
 import docker
 from app import db, models 
@@ -54,8 +54,8 @@ class StreamLineBuildGenerator(object):
 
 def downloadFileBuild(downloadFileName):
     images = models.Image.query.filter_by(imagename = downloadFileName).first()
-    subscribed_topics = StringToList(images.subscribed_topics)
-    published_topics = StringToList(images.published_topics)
+    subscribed_topics = StringToListOfDict(images.subscribed_topics)
+    published_topics = StringToListOfDict(images.published_topics)
     advertised_services = StringToList(images.advertised_services)
     image_name = images.imagename
     
@@ -72,10 +72,40 @@ def downloadFileBuild(downloadFileName):
         rysnc_cmd = 'rsync -aP cloudproxy ' + client_path
         os.system(rysnc_cmd)
         client_url = url()
-        client_launch = render_template('client.launch', published_topics = subscribed_topics, subscribed_topics = published_topics, 
-                                        advertised_services = advertised_services, url = client_url, image_id = image_name)
+	########
+	pub_topic_list = []
+	sub_topic_list = []
+	for pub_topic in published_topics:
+	    pub_topic_list.append(pub_topic.get("topic_name"))
+	for sub_topic in subscribed_topics:
+	    sub_topic_list.append(sub_topic.get("topic_name"))
+	
+	compress_list = []
+	for pub_topic in published_topics:
+	    pub_topic_name = pub_topic.get("topic_name")
+	    pub_topic_name_c = pub_topic_name + '/repub'
+	    pub_node_name = pub_topic_name + '_compress'
+	    compressed = pub_topic.get("compression")
+	    raw = 'raw'
+	    if compressed != 'none':
+	        compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (pub_node_name, compressed, pub_topic_name_c, raw, pub_topic_name))
+
+        for sub_topic in subscribed_topics:
+	    sub_topic_name = sub_topic.get("topic_name")
+	    sub_topic_name_c = sub_topic_name + '/repub'
+	    sub_node_name = sub_topic_name + '_compress'
+	    compressed = sub_topic.get("compression")
+	    raw = 'raw'
+	    if compressed != 'none':
+	        compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (sub_node_name, raw, sub_topic_name, compressed, sub_topic_name_c))
+	
+
+
+        client_launch = render_template('client.launch', published_topics = sub_topic_list, subscribed_topics = pub_topic_list, 
+                                        advertised_services = advertised_services, url = client_url, image_id = image_name, compress_list = compress_list)
         with open("./client/cloudproxy/launch/client.launch", "wb") as fh:
             fh.write(client_launch)
+	########
         zip_cmd = 'zip -r ./client/' + image_name +".zip " + "./client/cloudproxy/"
         os.system(zip_cmd)
         os.system("mv ./client/" + image_name + ".zip ./app/download/")
@@ -125,7 +155,7 @@ def uploadFile(ros_file, manifest_file, comments):
     
     manifest = json.load(manifest_file)
     published_topics = manifest.get('published_topics')
-    subscribed_topics = manifest.get('subscribed_topics')
+    subscribed_topics = manifest.get('subscribed_topics') #"subscribed_topics": [{"topic_name":"/tf","compression":"none"},{"topic_name":"/base_scan","compression":"compressed"}],\
     advertised_services = manifest.get('advertised_services')
     advertised_actions = manifest.get('advertised_actions')   
     start_cmds = manifest.get('start_cmds')
@@ -143,7 +173,33 @@ def uploadFile(ros_file, manifest_file, comments):
     rosentry = render_template('ros_entry.sh', start_cmds = start_cmds, external_lib_paths=external_lib_paths)
     with open("./temp/ros_entry.sh", "wb") as fh:
         fh.write(rosentry)
-            
+    
+    ####   
+    compress_list = []
+    for pub_topic in published_topics:
+	pub_topic_name = pub_topic.get("topic_name")
+	pub_topic_name_c = pub_topic_name + '/repub'
+	pub_node_name = pub_topic_name + '_compress'
+	compressed = pub_topic.get("compression")
+	raw = 'raw'
+	if compressed != 'none':
+	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (sub_node_name, raw, sub_topic_name, compressed, sub_topic_name_c))
+
+    for sub_topic in subscribed_topics:
+	sub_topic_name = sub_topic.get("topic_name")
+	sub_topic_name_c = sub_topic_name + '/repub'
+	sub_node_name = sub_topic_name + '_compress'
+	compressed = sub_topic.get("compression")
+	raw = 'raw'
+	if compressed != 'none':
+	    compress_list.append('<node pkg="image_transport" type="republish" name="%s" args="%s in:=%s %s out:=%s">' % (pub_node_name, compressed, pub_topic_name_c, raw, pub_topic_name))
+
+    topic_compress = render_template('compression.launch', compress_list = compress_list)
+    with open("./temp/compression.launch", "wb") as fh:
+        fh.write(topic_compress)
+    ####
+
+
     '''Building the docker image''' 
     logging.info('Generating docker image with tag %s', image_name)
     try:
@@ -171,7 +227,7 @@ def uploadFile(ros_file, manifest_file, comments):
     shutil.rmtree(temp_path)
      
     '''Insert a new record to the image table in the database'''  
-    image_record = Image(imagename = image_name, uploadname = ros_file.filename, comments = comments, uploadtime = datetime.now(), uploaduser = current_user.email, published_topics = ListToString(published_topics), subscribed_topics = ListToString(subscribed_topics), advertised_services = ListToString(advertised_services), advertised_actions = ListToString(advertised_actions))
+    image_record = Image(imagename = image_name, uploadname = ros_file.filename, comments = comments, uploadtime = datetime.now(), uploaduser = current_user.email, published_topics = ListOfDictToString(published_topics), subscribed_topics = ListOfDictToString(subscribed_topics), advertised_services = ListToString(advertised_services), advertised_actions = ListToString(advertised_actions))
     db.session.add(image_record)
     db.session.commit()
     
@@ -284,6 +340,35 @@ def deleteImage(image_name):
     return None   
 
 
+def ListOfDictToString(lista):
+    if lista.__len__() == 0:
+        stringa = "None"
+        return stringa
+    else:
+        stringa = ""
+        for i in range(0,lista.__len__()):
+            if (str(lista[i]).split("#")).__len__() <= 1:
+                lista[i] = str(lista[i])+"#"
+		logging.info(lista[i])
+        stringa = stringa.join(lista)
+	logging.info(stringa)
+        return stringa
+
+
+def StringToListOfDict(stringa):
+    if stringa == "None":
+        lista = []
+        return lista
+    else:
+        lista = stringa.split('#')
+	listb = []
+	for i in range(0,lista.__len__()):
+	    logging.info(lista[i])
+	    if lista[i] != "":
+	        listb.append(ast.literal_eval(lista[i]))
+        listb.pop()
+        return listb
+
 def ListToString(lista):
     if lista.__len__() == 0:
         stringa = "None"
@@ -305,5 +390,5 @@ def StringToList(stringa):
         lista = stringa.split('#')
         lista.pop()
         return lista
-    
+
 

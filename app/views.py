@@ -265,8 +265,16 @@ def idetailed(image_name):
     from app import db, models 
     
     image = models.Image.query.filter_by(imagename = image_name).first()
-    
-    return render_template('idetailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = StringToList(image.subscribed_topics), published_topics = StringToList(image.published_topics), advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
+    published_topics = StringToListOfDict(image.published_topics)
+    subscribed_topics = StringToListOfDict(image.subscribed_topics)
+    pub_topic_list = []
+    sub_topic_list = []
+    for pub_topic in published_topics:
+	    pub_topic_list.append(pub_topic.get("topic_name"))
+    for sub_topic in subscribed_topics:
+	    sub_topic_list.append(sub_topic.get("topic_name"))
+
+    return render_template('idetailed.html',imagename = image.imagename, uploadname = image.uploadname, uploaduser = image.uploaduser, uploadtime = image.uploadtime, subscribed_topics = sub_topic_list, published_topics = pub_topic_list, advertised_services = StringToList(image.advertised_services), advertised_actions = StringToList(image.advertised_actions), comments = image.comments)
 
 
 

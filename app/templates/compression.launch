@@ -1,0 +1,5 @@
+<launch>
+    {% for topic_compress_node in compress_list %}
+	{{ topic_compress_node }}
+    {% endfor %}
+</launch>
