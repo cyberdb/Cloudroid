@@ -4,3 +4,4 @@ flask-login
 flask-wtf
 docker
 six
+jinja2
